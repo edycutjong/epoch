@@ -14,6 +14,12 @@ const INITIAL_VAULT_FILES = [
   { name: 'arbitrum_escrow_private_key.pem', size: '1.6 KB', type: 'Key File', fingerprint: 'sha256:d38f...9e94' }
 ];
 
+const ACTIVE_DID = process.env.NEXT_PUBLIC_T3N_DID || 'did:t3n:david123';
+
+const getSwitchIdFromDid = (did: string) => {
+  return did.replace('did:t3n:', '');
+};
+
 export default function Dashboard() {
   const [files, setFiles] = useState(INITIAL_VAULT_FILES);
 
@@ -39,7 +45,7 @@ export default function Dashboard() {
   };
 
   // Switch Configuration
-  const [switchId] = useState('ep-983b-18cf');
+  const [switchId] = useState(() => getSwitchIdFromDid(ACTIVE_DID));
   const [status, setStatus] = useState('active');
   const isFired = status === 'fired';
   const [timeLeft, setTimeLeft] = useState(1209600000); // 14 days
@@ -188,15 +194,18 @@ export default function Dashboard() {
   const onResetDatabase = async () => {
     setIsResetting(true);
     try {
-      // Clear KV and DB
       await fetch('/api/seed/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          did: 'did:t3n:david123',
+          did: ACTIVE_DID,
           profile: {
-            first_name: 'David',
-            verified_contacts: { email: { value: 'david@legacy-switch.org' } }
+            first_name: ACTIVE_DID.includes('david123') ? 'David' : 'Terminal 3 User',
+            verified_contacts: {
+              email: {
+                value: ACTIVE_DID.includes('david123') ? 'david@legacy-switch.org' : 't3user@terminal3.io'
+              }
+            }
           }
         })
       });

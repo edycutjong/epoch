@@ -137,6 +137,24 @@ describe('db.ts tests', () => {
     expect(parsed.profiles).toBeDefined();
   });
 
+  it('initDb should seed custom profile when process.env.DID is set', () => {
+    process.env.DID = 'did:t3n:f600f352f618561182968a3507ac40d05365a4b2';
+    process.env.T3N_API_KEY = '0xd24bc1a5fade26f2da88648';
+    
+    try {
+      expect(inMemoryDb['db.json']).toBeUndefined();
+      initDb();
+      expect(inMemoryDb['db.json']).toBeDefined();
+      const parsed = JSON.parse(inMemoryDb['db.json']);
+      expect(parsed.profiles['did:t3n:f600f352f618561182968a3507ac40d05365a4b2']).toBeDefined();
+      expect(parsed.profiles['did:t3n:f600f352f618561182968a3507ac40d05365a4b2'].first_name).toBe('Terminal 3 User');
+      expect(parsed.kv['epoch:switch:f600f352f618561182968a3507ac40d05365a4b2']).toBeDefined();
+    } finally {
+      delete process.env.DID;
+      delete process.env.T3N_API_KEY;
+    }
+  });
+
   it('readDb should return db contents', () => {
     initDb();
     const db1 = readDb();

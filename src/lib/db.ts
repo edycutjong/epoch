@@ -16,13 +16,17 @@ export function initDb() {
     fs.mkdirSync(dir, { recursive: true });
   }
   if (!fs.existsSync(DB_PATH)) {
+    const activeDid = process.env.DID || 'did:t3n:david123';
+    const activeSecret = process.env.T3N_API_KEY || 'DAVID_SECRET_KEY';
+    const switchId = activeDid.replace('did:t3n:', '');
+
     const defaultSwitch = {
-      id: 'ep-983b-18cf',
+      id: switchId,
       gracePeriod: 1209600000, // 14 days
       lastHeartbeat: Date.now(),
       status: 'active',
       beneficiaries: ['{{profile.verified_contacts.email.value}}'],
-      otpSecret: 'DAVID_SECRET_KEY'
+      otpSecret: activeSecret
     };
 
     const defaultVault = {
@@ -32,8 +36,8 @@ export function initDb() {
 
     const initialDb = {
       kv: {
-        'epoch:switch:ep-983b-18cf': JSON.stringify(defaultSwitch),
-        'epoch:vault:ep-983b-18cf': JSON.stringify(defaultVault)
+        [`epoch:switch:${switchId}`]: JSON.stringify(defaultSwitch),
+        [`epoch:vault:${switchId}`]: JSON.stringify(defaultVault)
       },
       profiles: {
         'did:t3n:david123': {
@@ -43,7 +47,17 @@ export function initDb() {
               value: 'david@legacy-switch.org'
             }
           }
-        }
+        },
+        ...(activeDid !== 'did:t3n:david123' ? {
+          [activeDid]: {
+            first_name: 'Terminal 3 User',
+            verified_contacts: {
+              email: {
+                value: 't3user@terminal3.io'
+              }
+            }
+          }
+        } : {})
       },
       legacyTargets: [
         {

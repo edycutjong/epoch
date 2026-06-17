@@ -75,8 +75,8 @@ export async function runWasmContract(
 
         // Resolve profile placeholders
         const db = readDb();
-        // Default to David's profile if none found
-        const profile = db.profiles["did:t3n:david123"] || {
+        const activeDid = process.env.DID || "did:t3n:david123";
+        const profile = db.profiles[activeDid] || db.profiles["did:t3n:david123"] || {
           first_name: "David",
           verified_contacts: { email: { value: "david@legacy-switch.org" } }
         };
