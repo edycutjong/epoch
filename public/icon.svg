@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Brand Gradient -->
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="var(--primary, #ffaa00)"/>
+      <stop offset="100%" stop-color="var(--accent, #00f0ff)"/>
+    </linearGradient>
+    
+    <!-- Glow Filter -->
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background Mesh/Subtle Grid (Only shows if rendered standalone, otherwise transparent) -->
+  <rect width="100%" height="100%" fill="#0a0b0d" rx="96" />
+  
+  <!-- Outer Clock/Ring -->
+  <circle cx="256" cy="256" r="180" fill="none" stroke="url(#brandGrad)" stroke-width="8" opacity="0.2" />
+  
+  <!-- Monotonic Ticks -->
+  <g stroke="url(#brandGrad)" stroke-width="4" stroke-linecap="round" opacity="0.4">
+    <line x1="256" y1="96" x2="256" y2="116" />
+    <line x1="256" y1="396" x2="256" y2="416" />
+    <line x1="96" y1="256" x2="116" y2="256" />
+    <line x1="396" y1="256" x2="416" y2="256" />
+    <line x1="143" y1="143" x2="157" y2="157" />
+    <line x1="355" y1="143" x2="341" y2="157" />
+    <line x1="143" y1="369" x2="157" y2="355" />
+    <line x1="355" y1="369" x2="341" y2="355" />
+  </g>
+
+  <!-- Central Shield Vault + Hourglass Shape (The switch and clock combined) -->
+  <g filter="url(#neonGlow)">
+    <!-- Vault Outer Contour -->
+    <path d="M 256 140 
+             C 320 140, 360 160, 360 210
+             C 360 300, 290 350, 256 380
+             C 222 350, 152 300, 152 210
+             C 152 160, 192 140, 256 140 Z" 
+          fill="none" 
+          stroke="url(#brandGrad)" 
+          stroke-width="12" 
+          stroke-linejoin="round" />
+          
+    <!-- Hourglass Upper/Lower Sand Bulbs (Monotonic liveness) -->
+    <path d="M 220 190 H 292 L 256 256 Z" fill="url(#brandGrad)" opacity="0.8" />
+    <path d="M 256 256 L 220 322 H 292 Z" fill="none" stroke="url(#brandGrad)" stroke-width="4" />
+    
+    <!-- Core Lock / Switch Lever -->
+    <circle cx="256" cy="256" r="14" fill="#0a0b0d" stroke="url(#brandGrad)" stroke-width="6" />
+    
+    <!-- Active Pulse Switch Hand -->
+    <line x1="256" y1="256" x2="256" y2="210" stroke="url(#brandGrad)" stroke-width="6" stroke-linecap="round" />
+  </g>
+  
+  <!-- Subtle inner target crosshair -->
+  <circle cx="256" cy="256" r="8" fill="url(#brandGrad)" />
+</svg>
