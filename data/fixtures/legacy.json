@@ -1,0 +1,9 @@
+[
+  {
+    "id": "spouse-email",
+    "host": "https://payout.sandbox.test",
+    "path": "/notify",
+    "method": "POST",
+    "template": "{\"recipient\":\"spouse@legacy-switch.org\",\"content\":\"Sealed message released.\"}"
+  }
+]

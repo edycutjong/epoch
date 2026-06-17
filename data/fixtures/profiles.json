@@ -1,0 +1,10 @@
+{
+  "did:t3n:david123": {
+    "first_name": "David",
+    "verified_contacts": {
+      "email": {
+        "value": "david@legacy-switch.org"
+      }
+    }
+  }
+}
