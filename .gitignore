@@ -38,6 +38,9 @@ coverage/
 target/
 Cargo.lock
 
+# TS Build Cache
+*.tsbuildinfo
+
 # OS Files
 .DS_Store
 Thumbs.db
