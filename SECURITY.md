@@ -24,7 +24,7 @@ We will acknowledge receipt of your vulnerability report within 48 hours and str
 ## Scope
 
 The following areas are in scope for security reports:
-- The Rust/WASM TEE contract (`contracts/epoch-contract/`)
+- The Rust/WASM TEE contract (`contract/`)
 - The Switch Coordinator Agent (`The Custodian`) and Egress Dispatch Agent (`The Blind Courier`) logic
 - The Next.js dashboard and API routes (`src/app/` and `src/lib/`)
 - Clock API monotonic checks and KV store integration

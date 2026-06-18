@@ -154,51 +154,51 @@ fn stash_get(reference: &str) -> Option<Vec<u8>> {
 #[serde(rename_all = "camelCase")]
 struct SwitchState {
     id: String,
-    gracePeriod: u64, // in milliseconds
-    lastHeartbeat: u64, // monotonic timestamp
+    grace_period: u64, // in milliseconds
+    last_heartbeat: u64, // monotonic timestamp
     status: String, // "active", "expired", "fired", "cancelled"
     beneficiaries: Vec<String>,
-    otpSecret: String,
+    otp_secret: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 struct VaultState {
-    stashRefs: Vec<String>,
-    encryptedKeys: String,
+    stash_refs: Vec<String>,
+    encrypted_keys: String,
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct ArmRequest {
-    switchId: String,
-    gracePeriod: u64,
+    switch_id: String,
+    grace_period: u64,
     beneficiaries: Vec<String>,
-    stashRefs: Vec<String>,
-    encryptedKeys: String,
-    otpSecret: String,
+    stash_refs: Vec<String>,
+    encrypted_keys: String,
+    otp_secret: String,
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct HeartbeatRequest {
-    switchId: String,
-    otpCode: String,
-    clockOffset: Option<u64>, // debug/test time-warp offset
+    switch_id: String,
+    otp_code: String,
+    clock_offset: Option<u64>, // debug/test time-warp offset
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct TriggerCheckRequest {
-    switchId: String,
-    clockOffset: Option<u64>, // debug/test time-warp offset
+    switch_id: String,
+    clock_offset: Option<u64>, // debug/test time-warp offset
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct FireRequest {
-    switchId: String,
-    mockFailureStep: Option<u32>, // debug rollback test
+    switch_id: String,
+    mock_failure_step: Option<u32>, // debug rollback test
 }
 
 // Base32 Decoder for standard TOTP secrets
@@ -271,21 +271,21 @@ pub unsafe extern "C" fn arm_switch(ptr: *const u8, len: usize) -> u64 {
     };
     
     let now = get_now();
-    let switch_key = format!("epoch:switch:{}", req.switchId);
-    let vault_key = format!("epoch:vault:{}", req.switchId);
+    let switch_key = format!("epoch:switch:{}", req.switch_id);
+    let vault_key = format!("epoch:vault:{}", req.switch_id);
     
     let switch_state = SwitchState {
-        id: req.switchId.clone(),
-        gracePeriod: req.gracePeriod,
-        lastHeartbeat: now,
+        id: req.switch_id.clone(),
+        grace_period: req.grace_period,
+        last_heartbeat: now,
         status: "active".to_string(),
         beneficiaries: req.beneficiaries,
-        otpSecret: req.otpSecret,
+        otp_secret: req.otp_secret,
     };
     
     let vault_state = VaultState {
-        stashRefs: req.stashRefs,
-        encryptedKeys: req.encryptedKeys,
+        stash_refs: req.stash_refs,
+        encrypted_keys: req.encrypted_keys,
     };
     
     let switch_json = serde_json::to_string(&switch_state).unwrap();
@@ -296,10 +296,10 @@ pub unsafe extern "C" fn arm_switch(ptr: *const u8, len: usize) -> u64 {
     
     let response = serde_json::json!({
         "success": true,
-        "switchId": req.switchId,
+        "switchId": req.switch_id,
         "status": "active",
         "lastHeartbeat": now,
-        "nextHeartbeatRequiredBy": now + req.gracePeriod
+        "nextHeartbeatRequiredBy": now + req.grace_period
     });
     
     return_string(response.to_string())
@@ -315,7 +315,7 @@ pub unsafe extern "C" fn heartbeat(ptr: *const u8, len: usize) -> u64 {
         Err(e) => return return_string(format!(r#"{{"error":"Invalid payload: {}"}}"#, e)),
     };
     
-    let switch_key = format!("epoch:switch:{}", req.switchId);
+    let switch_key = format!("epoch:switch:{}", req.switch_id);
     let switch_data = match kv_get(&switch_key) {
         Some(data) => data,
         None => return return_string(r#"{"error":"Switch not found"}"#.to_string()),
@@ -326,16 +326,16 @@ pub unsafe extern "C" fn heartbeat(ptr: *const u8, len: usize) -> u64 {
         return return_string(format!(r#"{{"error":"Cannot send heartbeat to a {} switch"}}"#, state.status));
     }
     
-    let now = get_now() + req.clockOffset.unwrap_or(0);
+    let now = get_now() + req.clock_offset.unwrap_or(0);
     
     // Verify OTP code
-    let is_valid = verify_totp(&state.otpSecret, &req.otpCode, now);
+    let is_valid = verify_totp(&state.otp_secret, &req.otp_code, now);
     if !is_valid {
         return return_string(r#"{"error":"Invalid OTP code"}"#.to_string());
     }
     
     // Reset heartbeat timer
-    state.lastHeartbeat = now;
+    state.last_heartbeat = now;
     state.status = "active".to_string();
     
     let updated_json = serde_json::to_string(&state).unwrap();
@@ -346,7 +346,7 @@ pub unsafe extern "C" fn heartbeat(ptr: *const u8, len: usize) -> u64 {
         "switchId": state.id,
         "status": "active",
         "lastHeartbeat": now,
-        "nextHeartbeatRequiredBy": now + state.gracePeriod
+        "nextHeartbeatRequiredBy": now + state.grace_period
     });
     
     return_string(response.to_string())
@@ -362,17 +362,17 @@ pub unsafe extern "C" fn check_trigger(ptr: *const u8, len: usize) -> u64 {
         Err(e) => return return_string(format!(r#"{{"error":"Invalid payload: {}"}}"#, e)),
     };
     
-    let switch_key = format!("epoch:switch:{}", req.switchId);
+    let switch_key = format!("epoch:switch:{}", req.switch_id);
     let switch_data = match kv_get(&switch_key) {
         Some(data) => data,
         None => return return_string(r#"{"error":"Switch not found"}"#.to_string()),
     };
     
     let mut state: SwitchState = serde_json::from_str(&switch_data).unwrap();
-    let now = get_now() + req.clockOffset.unwrap_or(0);
+    let now = get_now() + req.clock_offset.unwrap_or(0);
     
-    let elapsed = now.saturating_sub(state.lastHeartbeat);
-    let expired = elapsed > state.gracePeriod;
+    let elapsed = now.saturating_sub(state.last_heartbeat);
+    let expired = elapsed > state.grace_period;
     
     if expired && state.status == "active" {
         state.status = "expired".to_string();
@@ -380,13 +380,13 @@ pub unsafe extern "C" fn check_trigger(ptr: *const u8, len: usize) -> u64 {
         kv_set(&switch_key, &updated_json);
     }
     
-    let time_left = state.gracePeriod.saturating_sub(elapsed);
+    let time_left = state.grace_period.saturating_sub(elapsed);
     
     let response = serde_json::json!({
         "switchId": state.id,
         "status": state.status,
         "elapsed": elapsed,
-        "gracePeriod": state.gracePeriod,
+        "gracePeriod": state.grace_period,
         "timeLeft": time_left,
         "expired": expired || state.status == "expired" || state.status == "fired"
     });
@@ -404,8 +404,8 @@ pub unsafe extern "C" fn fire_epoch(ptr: *const u8, len: usize) -> u64 {
         Err(e) => return return_string(format!(r#"{{"error":"Invalid payload: {}"}}"#, e)),
     };
     
-    let switch_key = format!("epoch:switch:{}", req.switchId);
-    let vault_key = format!("epoch:vault:{}", req.switchId);
+    let switch_key = format!("epoch:switch:{}", req.switch_id);
+    let vault_key = format!("epoch:vault:{}", req.switch_id);
     
     let switch_data = match kv_get(&switch_key) {
         Some(data) => data,
@@ -429,7 +429,7 @@ pub unsafe extern "C" fn fire_epoch(ptr: *const u8, len: usize) -> u64 {
     
     // Verify and retrieve files from stash
     let mut retrieved_files = Vec::new();
-    for ref_str in &vault_state.stashRefs {
+    for ref_str in &vault_state.stash_refs {
         if let Some(data) = stash_get(ref_str) {
             log(&format!("Successfully retrieved file {} from stash (size: {} bytes)", ref_str, data.len()));
             retrieved_files.push(serde_json::json!({
@@ -454,7 +454,7 @@ pub unsafe extern "C" fn fire_epoch(ptr: *const u8, len: usize) -> u64 {
         let step_num = (idx + 1) as u32;
         
         // Mock failure check for rollback demo
-        if let Some(fail_step) = req.mockFailureStep {
+        if let Some(fail_step) = req.mock_failure_step {
             if fail_step == step_num {
                 log(&format!("Simulated failure triggered on step {}", step_num));
                 
@@ -509,7 +509,7 @@ pub unsafe extern "C" fn fire_epoch(ptr: *const u8, len: usize) -> u64 {
         "switchId": switch_state.id,
         "firedAt": get_now(),
         "deliveredBeneficiaries": switch_state.beneficiaries,
-        "releasedStashKeys": vault_state.encryptedKeys
+        "releasedStashKeys": vault_state.encrypted_keys
     }).to_string();
     
     let mut vc_buf = vec![0u8; 4096];
@@ -531,8 +531,8 @@ pub unsafe extern "C" fn fire_epoch(ptr: *const u8, len: usize) -> u64 {
         "switchId": switch_state.id,
         "firedAt": get_now(),
         "beneficiaries": switch_state.beneficiaries,
-        "vaultStashRefs": vault_state.stashRefs,
-        "encryptedKeys": vault_state.encryptedKeys
+        "vaultStashRefs": vault_state.stash_refs,
+        "encryptedKeys": vault_state.encrypted_keys
     }).to_string();
 
     let release_log_ref = match stash_put(audit_manifest.as_bytes()) {
@@ -557,7 +557,7 @@ pub unsafe extern "C" fn fire_epoch(ptr: *const u8, len: usize) -> u64 {
         "status": "fired",
         "stepsExecuted": step_results,
         "vcReceipt": vc_receipt,
-        "decryptedKeys": vault_state.encryptedKeys,
+        "decryptedKeys": vault_state.encrypted_keys,
         "retrievedFiles": retrieved_files,
         "releaseLogStashRef": release_log_ref
     });
@@ -574,7 +574,7 @@ pub unsafe extern "C" fn cancel(ptr: *const u8, len: usize) -> u64 {
         Err(e) => return return_string(format!(r#"{{"error":"Invalid payload: {}"}}"#, e)),
     };
     
-    let switch_key = format!("epoch:switch:{}", req.switchId);
+    let switch_key = format!("epoch:switch:{}", req.switch_id);
     let switch_data = match kv_get(&switch_key) {
         Some(data) => data,
         None => return return_string(r#"{"error":"Switch not found"}"#.to_string()),
@@ -607,24 +607,24 @@ pub unsafe extern "C" fn get_status(ptr: *const u8, len: usize) -> u64 {
         Err(e) => return return_string(format!(r#"{{"error":"Invalid payload: {}"}}"#, e)),
     };
     
-    let switch_key = format!("epoch:switch:{}", req.switchId);
+    let switch_key = format!("epoch:switch:{}", req.switch_id);
     let switch_data = match kv_get(&switch_key) {
         Some(data) => data,
         None => return return_string(r#"{"error":"Switch not found"}"#.to_string()),
     };
     
     let state: SwitchState = serde_json::from_str(&switch_data).unwrap();
-    let now = get_now() + req.clockOffset.unwrap_or(0);
-    let elapsed = now.saturating_sub(state.lastHeartbeat);
-    let time_left = state.gracePeriod.saturating_sub(elapsed);
+    let now = get_now() + req.clock_offset.unwrap_or(0);
+    let elapsed = now.saturating_sub(state.last_heartbeat);
+    let time_left = state.grace_period.saturating_sub(elapsed);
     
     let response = serde_json::json!({
         "switchId": state.id,
         "status": state.status,
         "elapsed": elapsed,
-        "gracePeriod": state.gracePeriod,
+        "gracePeriod": state.grace_period,
         "timeLeft": time_left,
-        "lastHeartbeat": state.lastHeartbeat
+        "lastHeartbeat": state.last_heartbeat
     });
     
     return_string(response.to_string())

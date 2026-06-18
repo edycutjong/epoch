@@ -1,16 +1,23 @@
-.PHONY: help e2e lighthouse security-scan test-contract
+.PHONY: help ci e2e lighthouse security-scan test-contract
 
 help:
 	@echo "Epoch Makefile Harness"
 	@echo "======================"
+	@echo "make ci            - Run ESLint, Typecheck, and Coverage tests"
 	@echo "make test-contract - Run Rust enclave contract unit tests"
 	@echo "make e2e           - Run Playwright E2E tests"
 	@echo "make lighthouse    - Run Lighthouse CI performance and accessibility audit"
 	@echo "make security-scan - Run npm audit and license compliance check"
 
+ci:
+	@echo "=== RUNNING RUST CONTRACT TESTS ==="
+	cargo test --manifest-path contract/Cargo.toml
+	@echo "=== RUNNING INTEGRATION & COVERAGE TESTS ==="
+	npm run ci
+
 test-contract:
 	@echo "🦀 Running Rust enclave contract unit tests..."
-	cargo test --manifest-path contracts/epoch-contract/Cargo.toml
+	cargo test --manifest-path contract/Cargo.toml
 
 e2e:
 	@echo "🎭 Running Playwright E2E tests (demo mode)..."

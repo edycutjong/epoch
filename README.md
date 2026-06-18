@@ -106,11 +106,11 @@ graph TD
 
 3. **Compile the WASM Contract:**
    ```bash
-   cd contracts/epoch-contract
+   cd contract
    cargo build --target wasm32-unknown-unknown --release
-   cd ../..
+   cd ..
    mkdir -p src/lib
-   cp contracts/epoch-contract/target/wasm32-unknown-unknown/release/epoch_contract.wasm src/lib/
+   cp contract/target/wasm32-unknown-unknown/release/epoch_contract.wasm src/lib/
    ```
 
 4. **Setup Environment:**
@@ -174,8 +174,7 @@ epoch/
 │   ├── app/           # Next.js 16 App Router Pages
 │   ├── components/    # React 19 Components
 │   └── lib/           # Enclave WASM & Client API Wrappers
-├── contracts/
-│   └── epoch-contract/# Rust/WASM TEE Contract Source
+├── contract/          # Rust/WASM TEE Contract Source
 ├── e2e/                # Playwright E2E Tests
 ├── test/               # Jest Unit Tests
 ├── .github/           # GitHub Actions CI Workflows
@@ -185,6 +184,24 @@ epoch/
 ├── lighthouserc.json  # Lighthouse CI audit config
 └── README.md          # You are here
 ```
+
+---
+
+## 🧠 Terminal 3 ADK Dev Challenge: Audit & Discovered Bugs
+
+This project is submitted to the **Terminal 3 ADK Dev Challenge 2026** as part of the **Vouch Suite** (a 5-enclave system including Epoch, Lethe, Silo, Synod, and Visor).
+
+During the development and integration of these enclaves, we completed a thorough audit of the Terminal 3 Agent Dev Kit (ADK) host APIs and SDK, identifying **six concrete onboarding bugs and documentation gaps** that we have compiled for the dev challenge judges:
+
+1. **Bug #1: Undocumented Parameter in `metamask_sign`:** The SDK setup instructions specify `EthSign: metamask_sign(address, undefined, T3N_API_KEY)` without documenting what the second parameter (passed as `undefined`) does or configures, creating blocker questions for custom wallet bindings.
+2. **Bug #2: `kv-store` Interface Discrepancy (Map Name vs. Flat Keys):** The official WIT file (`package.wit`) declares KV operations as `get: func(map-name: string, key: list<u8>)`. However, the raw C imports and local runtimes assume a single flat namespace where `host_kv_store_get` only takes `key_ptr` and `key_len` parameters. This makes it impossible to build WASM Component-compliant code without renaming/wrapping guest imports.
+3. **Bug #3: Clock API Method Name Mismatch:** Walkthroughs reference `fn host_clock_now() -> u64`, but the dependency WIT packages require `now-ms: func() -> result<u64, clock-error>`. This causes cargo compilation errors when targeting standard `wasm32-wasip2` components.
+4. **Bug #4: Missing `host_signing_issue_vc` in `signing` WIT Interface:** The non-WIT templates call `host_signing_issue_vc` to sign and issue Verifiable Credentials. However, the official WIT `signing` interface only exposes `sign: func(message: list<u8>) -> result<list<u8>, sign-error>`, with no VC-level helper functions.
+5. **Gap #5: Opaque `loadWasmComponent` Path Resolution:** The setup guides invoke `await loadWasmComponent()` with zero arguments, but do not document where the `.wasm` component files are resolved from, or how developers can override the path for local components.
+6. **Gap #6: Tenant DID Hex Double-Encoding Trap:** The developer cheatsheet suggests map names are resolved via `format!("z:{}:secrets", hex::encode(&tid))` where `tid` is `tenant_did()`. If `tenant_did()` returns a string (e.g. `did:t3n:f600...`), `hex::encode` will double-encode the ASCII representation, breaking KV routing.
+7. **Gap #7: Public KV Route specifications:** The guides mention that public maps are world-readable via `/api/dev/public-kv/<tid>/<tail>`. However, there is no documentation on CORS policies, cache-control headers, or pagination query schemas.
+8. **Gap #8: Transaction Rollback Semantics Undocumented:** The documentation lacks explanation on how to trigger state rollbacks programmatically when a contract function returns an `Err`.
+9. **Gap #9: Outbox Idempotency Lifecycles:** The `outbox` interface enqueues webhooks using an `idk` (idempotency key), but details about the deduplication window lifespan and queue overflow behaviors are undocumented.
 
 ---
 

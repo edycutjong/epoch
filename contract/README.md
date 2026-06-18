@@ -175,5 +175,5 @@ To compile the contract to the WebAssembly target required by the host runner:
    ```
 3. Copy the compiled contract WASM binary to the Next.js runtime library directory:
    ```bash
-   cp target/wasm32-unknown-unknown/release/epoch_contract.wasm ../../src/lib/
+   cp target/wasm32-unknown-unknown/release/epoch_contract.wasm ../src/lib/
    ```
