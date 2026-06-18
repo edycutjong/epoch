@@ -13,6 +13,28 @@ test.describe('Epoch Dead-Man\'s Switch Lifecycle Flow', () => {
     const statusPill = page.locator('div').filter({ hasText: /^(active|armed)$/i }).first();
     await expect(statusPill).toBeVisible();
 
+    // Verify empty state is visible initially
+    await expect(page.getByText('Vault is empty')).toBeVisible();
+
+    // Test: Download example file
+    const downloadPromise = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'DOWNLOAD EXAMPLE FILE' }).click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toBe('epoch_example_secret.txt');
+
+    // Test: Upload immediate example
+    await page.getByRole('button', { name: 'UPLOAD IMMEDIATE EXAMPLE' }).click();
+    await expect(page.getByText('epoch_example_secret.txt')).toBeVisible();
+    await expect(page.getByText('Vault is empty')).not.toBeVisible();
+
+    // Test: Manual file upload via input
+    await page.locator('#file-upload-input').setInputFiles({
+      name: 'user_uploaded_file.txt',
+      mimeType: 'text/plain',
+      buffer: Buffer.from('hello world')
+    });
+    await expect(page.getByText('user_uploaded_file.txt')).toBeVisible();
+
     // 2. Heartbeat submission
     // Get the debug OTP value shown on the TimeWarpPanel debug panel
     // We can open the heartbeat modal and click autofill
@@ -81,5 +103,16 @@ test.describe('Epoch Dead-Man\'s Switch Lifecycle Flow', () => {
 
     // Verify VC receipt is displayed
     await expect(page.getByText('ENCLAVE VC RECEIPT')).toBeVisible();
+
+    // Test: Download decrypted files
+    const decryptedDownloadPromise1 = page.waitForEvent('download');
+    await page.locator('a[title="Download Decrypted File"]').first().click();
+    const decryptedDownload1 = await decryptedDownloadPromise1;
+    expect(decryptedDownload1.suggestedFilename()).toBe('epoch_example_secret.txt');
+
+    const decryptedDownloadPromise2 = page.waitForEvent('download');
+    await page.locator('a[title="Download Decrypted File"]').nth(1).click();
+    const decryptedDownload2 = await decryptedDownloadPromise2;
+    expect(decryptedDownload2.suggestedFilename()).toBe('user_uploaded_file.txt');
   });
 });
