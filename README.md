@@ -123,9 +123,6 @@ graph TD
    npm run dev
    ```
 
-> **For Judges:** Skip account creation! Use test credentials:
-> **Email:** `judge@hackathon.com` | **Password:** `winner123`
-
 ---
 
 ## 🧪 Testing & CI
@@ -160,15 +157,11 @@ npm run test       # Run unit tests
 
 ```
 epoch/
-├── audio/             # Voiceover and background music files
-│   ├── voiceover.mp3
-│   └── background.mp3
 ├── docs/              # README and presentation assets
 │   ├── assets/
 │   │   ├── screenshots/  # Walkthrough screenshots (01 to 08)
 │   │   └── icon-512.png
 │   ├── readme-hero.png
-│   ├── readme.png
 │   └── PITCH_DECK.md
 ├── src/
 │   ├── app/           # Next.js 16 App Router Pages
@@ -176,10 +169,9 @@ epoch/
 │   └── lib/           # Enclave WASM & Client API Wrappers
 ├── contract/          # Rust/WASM TEE Contract Source
 ├── e2e/                # Playwright E2E Tests
-├── test/               # Jest Unit Tests
+├── test/               # Vitest Integration Tests
 ├── .github/           # GitHub Actions CI Workflows
 ├── eslint.config.mjs  # ESLint 9 configuration
-├── epoch_demo_final.mp4 # Final compiled demo video
 ├── Makefile           # Local Automation Targets
 ├── lighthouserc.json  # Lighthouse CI audit config
 └── README.md          # You are here
