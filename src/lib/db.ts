@@ -9,6 +9,7 @@ export interface DbSchema {
   legacyTargets: any[];
   dispatchedNotifications: any[];
   stash: Record<string, string>;
+  outbox?: any[];
 }
 
 export function initDb() {
