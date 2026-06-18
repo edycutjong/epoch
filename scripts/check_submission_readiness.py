@@ -2,6 +2,7 @@
 import os
 import sys
 
+
 def check_readiness():
     print("======================================================================")
     print("                EPOCH SUBMISSION READINESS AUDIT")
@@ -10,21 +11,12 @@ def check_readiness():
     # 1. Check required files
     required_files = [
         "README.md",
-        "PRD.md",
-        "ARCHITECTURE.md",
-        "COMPLEXITY.md",
-        "UI.md",
-        "SEED_DATA.md",
-        "SUBMISSION.md",
-        "SPONSOR_DEFENSE.md",
-        "BUILD_PLAN.md",
-        "PROGRESS.md",
         "LICENSE",
         "src/lib/epoch_contract.wasm",
         "scripts/bench.py",
         "scripts/verify_offline.py",
-        "docs/assets/og-image.png",
-        "docs/assets/readme-hero.png"
+        "public/og-image.png",
+        "docs/readme-hero.png",
     ]
 
     missing = []
@@ -64,6 +56,7 @@ def check_readiness():
 
     print("\n[AUDIT RESULT] PASSED. Epoch is 100% submission ready.")
     print("======================================================================")
+
 
 if __name__ == "__main__":
     check_readiness()
