@@ -1,14 +1,16 @@
 <div align="center">
+
+  <img src="docs/icon-animated.svg" alt="Epoch Icon" width="120">
   <h1>Epoch ⏳</h1>
   <p><em>Verifiable, privacy-blind inheritance and continuity orchestration inside hardware-isolated enclaves.</em></p>
-  <img src="docs/readme-hero.png" alt="Epoch — TEE Dead-Man's Switch" width="100%">
+  <img src="docs/readme-hero.svg" alt="Epoch — TEE Dead-Man's Switch" width="100%">
 
   <br/>
 
   [![Live Demo](https://img.shields.io/badge/🚀_Live-Demo-06b6d4?style=for-the-badge)](https://epoch.edycu.dev)
   [![Pitch Video](https://img.shields.io/badge/🎬_Pitch-Video-ef4444?style=for-the-badge)](https://youtu.be/your-video)
-  [![Pitch Deck](https://img.shields.io/badge/📊_Pitch-Deck-f59e0b?style=for-the-badge)](docs/PITCH_DECK.md)
-  [![Built for T3ADK](https://img.shields.io/badge/DoraHacks-T3ADK_Launch_2026-8b5cf6?style=for-the-badge)](https://dorahacks.io)
+  [![Pitch Deck](https://img.shields.io/badge/📊_Pitch-Deck-f59e0b?style=for-the-badge)](https://epoch.edycu.dev/pitch-deck.html)
+  [![Built for T3ADK](https://img.shields.io/badge/DoraHacks-T3ADK_Launch_2026-8b5cf6?style=for-the-badge)](https://dorahacks.io/hackathon/t3adkdevchallenge)
 
   <br/>
 
@@ -75,10 +77,12 @@ graph TD
 ## 🏆 Sponsor Tracks Targeted
 
 ### T3 ADK Developer Track
-- **kv-store API**: Sealed storage of user switch configuration and encrypted vault keys.
-- **clock API**: Monotonic clock usage for countdown duration evaluation, preventing tampering.
-- **http-with-placeholders API**: Secure egress alerts to beneficiaries replacing did profile PII markers.
-- **signing API**: Issuance of a Verifiable Credential receipt verifying the success/failure of the atomic legacy cascade.
+- **kv-store API**: Sealed storage of user switch configuration and encrypted vault keys. (Implemented in Wasm contract imports `host_kv_store_get` and `host_kv_store_set` in [contract/src/lib.rs:L86-110](contract/src/lib.rs#L86-110)).
+- **clock API**: Monotonic clock usage for countdown duration evaluation, preventing tampering. (Used via `host_clock_now` in [contract/src/lib.rs:L112-114](contract/src/lib.rs#L112-114)).
+- **http-with-placeholders API**: Secure egress alerts to beneficiaries replacing did profile PII markers. (Used via `host_http_with_placeholders_post` in [contract/src/lib.rs:L482-488](contract/src/lib.rs#L482-488)).
+- **signing API**: Issuance of a Verifiable Credential receipt verifying the success/failure of the atomic legacy cascade. (Used via `host_signing_issue_vc` in [contract/src/lib.rs:L516-520](contract/src/lib.rs#L516-520)).
+- **stash API**: Sealed storage of user documents and files. (Used via `host_stash_put` and `host_stash_get` in [contract/src/lib.rs:L120-150](contract/src/lib.rs#L120-150)).
+
 
 ---
 

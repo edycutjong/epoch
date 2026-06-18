@@ -28,6 +28,15 @@ export const metadata: Metadata = {
   authors: [{ name: 'Epoch Core Team' }],
   icons: {
     icon: '/icon.svg',
+    apple: '/apple-touch-icon.png',
+  },
+  appleWebApp: {
+    capable: true,
+    title: 'Epoch',
+    statusBarStyle: 'black-translucent',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
   },
   openGraph: {
     title: 'Epoch — TEE-secured Dead-Man\'s Switch',
@@ -59,7 +68,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} ${orbitron.variable}`}>
+    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} ${orbitron.variable}`} suppressHydrationWarning>
       <body className="antialiased min-h-screen bg-[#0a0b0d] text-slate-100 overflow-x-hidden">
         {children}
       </body>

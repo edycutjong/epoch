@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Epoch — Pitch Deck</title>
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; zoom: 1.2; }
+    h1, h2, h3, .font-display { font-family: 'Orbitron', sans-serif; }
+    .font-mono, code { font-family: 'JetBrains Mono', monospace; }
+    .slide { display: none; opacity: 0; transform: translateY(12px); }
+    .slide.active {
+      display: flex;
+      animation: slideIn 0.4s ease-out forwards;
+    }
+    @keyframes slideIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .glow-amber { text-shadow: 0 0 40px rgba(255,170,0,0.3); }
+    .glow-cyan { text-shadow: 0 0 40px rgba(0,240,255,0.3); }
+    .card {
+      background: linear-gradient(135deg, rgba(255,170,0,0.04), rgba(0,240,255,0.02));
+      border: 1px solid rgba(255,170,0,0.15);
+      border-radius: 16px;
+      backdrop-filter: blur(8px);
+    }
+    .card-cyan {
+      background: linear-gradient(135deg, rgba(0,240,255,0.04), rgba(255,170,0,0.02));
+      border: 1px solid rgba(0,240,255,0.15);
+      border-radius: 16px;
+    }
+    .accent-amber { color: #ffaa00; }
+    .accent-cyan { color: #00f0ff; }
+    .accent-red { color: #ef4444; }
+    .accent-green { color: #22c55e; }
+    .bg-base { background-color: #0a0b0d; }
+    .bg-surface { background-color: #12141a; }
+    .ring-pulse {
+      animation: ringPulse 3s ease-in-out infinite;
+    }
+    @keyframes ringPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255,170,0,0.2); }
+      50% { box-shadow: 0 0 0 12px rgba(255,170,0,0); }
+    }
+    .flow-step {
+      position: relative;
+    }
+    .flow-step::after {
+      content: '→';
+      position: absolute;
+      right: -28px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #ffaa00;
+      font-size: 20px;
+    }
+    .flow-step:last-child::after {
+      display: none;
+    }
+    table { border-collapse: collapse; width: 100%; }
+    th { text-align: left; padding: 12px 16px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; border-bottom: 1px solid rgba(255,170,0,0.15); }
+    td { padding: 12px 16px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.04); color: #cbd5e1; }
+    .winner { color: #ffaa00; font-weight: 700; }
+    .loser { color: #475569; }
+    .progress-ring {
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      border: 3px solid rgba(255,170,0,0.15);
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .progress-ring::before {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      border-top-color: #ffaa00;
+      animation: spin 3s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .touch-zone {
+      position: absolute; top: 0; bottom: 64px; cursor: pointer;
+    }
+    .touch-left { left: 0; width: 30%; }
+    .touch-right { right: 0; width: 30%; }
+    /* Staggered entrance for slide 4 flow steps */
+    @keyframes flowEnter {
+      from { opacity: 0; transform: translateY(24px) scale(0.92); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .flow-enter {
+      opacity: 0;
+    }
+    .slide.active .flow-enter {
+      animation: flowEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    .flow-delay-1 { animation-delay: 0.08s !important; }
+    .flow-delay-2 { animation-delay: 0.2s !important; }
+    .flow-delay-3 { animation-delay: 0.32s !important; }
+    .flow-delay-4 { animation-delay: 0.44s !important; }
+    .flow-delay-5 { animation-delay: 0.56s !important; }
+  </style>
+</head>
+<body class="bg-base text-slate-100 h-full overflow-hidden flex flex-col justify-between select-none">
+
+  <!-- Touch Zones for mobile -->
+  <div class="touch-zone touch-left" onclick="prevSlide()"></div>
+  <div class="touch-zone touch-right" onclick="nextSlide()"></div>
+
+  <!-- Slide Container -->
+  <div class="flex-1 flex items-center justify-center p-6 md:p-12 relative overflow-hidden">
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- SLIDE 1: TITLE & HOOK -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="slide active max-w-5xl w-full flex-col md:flex-row items-center justify-between gap-12">
+      <div class="flex-1 flex flex-col items-start text-left">
+        <span class="text-xs font-mono tracking-widest accent-amber uppercase mb-6">Slide 01 // Title</span>
+        <h1 class="text-5xl md:text-7xl font-black tracking-tighter leading-none mb-6 glow-amber">
+          EPOCH <span class="accent-cyan"><i data-lucide="hourglass" class="inline-block w-12 h-12 md:w-16 md:h-16"></i></span>
+        </h1>
+        <p class="text-slate-400 text-lg md:text-xl max-w-lg leading-relaxed mb-8">
+          If you go silent, your agent acts.<br>
+          <span class="accent-amber font-semibold">Atomically. Blindly. Inside hardware.</span>
+        </p>
+        <div class="flex gap-3 text-xs font-mono">
+          <span class="px-3 py-1.5 card accent-amber">T3 ADK Launch 2026</span>
+          <span class="px-3 py-1.5 card accent-cyan">DoraHacks</span>
+        </div>
+      </div>
+      <div class="flex-1 flex items-center justify-center">
+        <div class="progress-ring ring-pulse">
+          <div class="text-center">
+            <div class="text-3xl font-black font-display accent-amber">14d</div>
+            <div class="text-[10px] font-mono text-slate-500 uppercase mt-1">Grace Period</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- SLIDE 2: THE PROBLEM -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="slide max-w-5xl w-full flex-col text-left gap-10">
+      <span class="text-xs font-mono tracking-widest accent-amber uppercase">Slide 02 // The Problem</span>
+      <h2 class="text-3xl md:text-5xl font-bold tracking-tight glow-amber">
+        The Custodian's Dilemma
+      </h2>
+      <div class="grid md:grid-cols-3 gap-6 mt-4">
+        <div class="card p-6">
+          <div class="mb-3 accent-amber"><i data-lucide="lock-open" class="w-7 h-7"></i></div>
+          <h3 class="text-sm font-bold accent-amber mb-2 font-display">The Trust Gap</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">Legacy platforms hold decryption keys in plaintext. One breach, one insider — your entire digital life exposed.</p>
+        </div>
+        <div class="card p-6">
+          <div class="mb-3 accent-amber"><i data-lucide="clock" class="w-7 h-7"></i></div>
+          <h3 class="text-sm font-bold accent-amber mb-2 font-display">Clock Tampering</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">Software clocks are spoofable. An attacker with host access can fast-forward time and trigger premature release.</p>
+        </div>
+        <div class="card p-6">
+          <div class="mb-3 accent-amber"><i data-lucide="zap-off" class="w-7 h-7"></i></div>
+          <h3 class="text-sm font-bold accent-amber mb-2 font-display">Fragile Dispatch</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">Non-atomic triggers leave vaults half-exposed. One notification fails, secrets are leaked without the full cascade.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- SLIDE 3: THE SOLUTION -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="slide max-w-5xl w-full flex-col text-left gap-10">
+      <span class="text-xs font-mono tracking-widest accent-amber uppercase">Slide 03 // The Solution</span>
+      <h2 class="text-3xl md:text-5xl font-bold tracking-tight glow-cyan">
+        Trustless Succession via <span class="accent-cyan">Enclave Boundary</span>
+      </h2>
+      <div class="grid md:grid-cols-3 gap-6 mt-4">
+        <div class="card-cyan p-6">
+          <div class="text-xs font-mono accent-cyan mb-3 uppercase">T3 Stash</div>
+          <h3 class="text-base font-bold mb-2">Sealed Vaults</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">Assets encrypted client-side. Keys sealed inside Intel TDX. No host, no third party, no startup can access them.</p>
+        </div>
+        <div class="card-cyan p-6">
+          <div class="text-xs font-mono accent-cyan mb-3 uppercase">T3 Time/Clock</div>
+          <h3 class="text-base font-bold mb-2">Hardware Clock</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">Monotonic CPU clock inside the enclave. Immune to host manipulation. Physically incapable of time fraud.</p>
+        </div>
+        <div class="card-cyan p-6">
+          <div class="text-xs font-mono accent-cyan mb-3 uppercase">T3 Contracts-Call</div>
+          <h3 class="text-base font-bold mb-2">Atomic Cascade</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">All-or-nothing execution. If any single notification or action fails, the entire release rolls back. Vault stays sealed.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- SLIDE 4: CORE PRODUCT FLOW -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="slide max-w-5xl w-full flex-col text-left gap-10">
+      <span class="text-xs font-mono tracking-widest accent-amber uppercase">Slide 04 // Product Flow</span>
+      <h2 class="text-3xl md:text-4xl font-bold tracking-tight">
+        How <span class="accent-amber">Epoch</span> Works
+      </h2>
+      <div class="flex flex-wrap items-center justify-center gap-10 mt-4">
+        <div class="flow-step card p-5 text-center w-36 flow-enter flow-delay-1">
+          <div class="mb-2 accent-amber"><i data-lucide="shield-check" class="w-7 h-7"></i></div>
+          <div class="text-xs font-mono accent-amber">01</div>
+          <div class="text-sm font-semibold mt-1">Arm Switch</div>
+          <div class="text-[10px] text-slate-500 mt-1">Client-side encrypt</div>
+        </div>
+        <div class="flow-step card p-5 text-center w-36 flow-enter flow-delay-2">
+          <div class="mb-2 accent-amber"><i data-lucide="vault" class="w-7 h-7"></i></div>
+          <div class="text-xs font-mono accent-amber">02</div>
+          <div class="text-sm font-semibold mt-1">Seal Vault</div>
+          <div class="text-[10px] text-slate-500 mt-1">T3 Stash storage</div>
+        </div>
+        <div class="flow-step card p-5 text-center w-36 flow-enter flow-delay-3">
+          <div class="mb-2 accent-amber"><i data-lucide="heart-pulse" class="w-7 h-7"></i></div>
+          <div class="text-xs font-mono accent-amber">03</div>
+          <div class="text-sm font-semibold mt-1">Heartbeat</div>
+          <div class="text-[10px] text-slate-500 mt-1">OTP liveness proof</div>
+        </div>
+        <div class="flow-step card p-5 text-center w-36 flow-enter flow-delay-4">
+          <div class="mb-2 accent-amber"><i data-lucide="timer" class="w-7 h-7"></i></div>
+          <div class="text-xs font-mono accent-amber">04</div>
+          <div class="text-sm font-semibold mt-1">Countdown</div>
+          <div class="text-[10px] text-slate-500 mt-1">Monotonic clock</div>
+        </div>
+        <div class="card p-5 text-center w-36 flow-enter flow-delay-5">
+          <div class="mb-2 accent-cyan"><i data-lucide="send" class="w-7 h-7"></i></div>
+          <div class="text-xs font-mono accent-cyan">05</div>
+          <div class="text-sm font-semibold mt-1">Cascade</div>
+          <div class="text-[10px] text-slate-500 mt-1">Blind notify heirs</div>
+        </div>
+      </div>
+      <p class="text-slate-500 text-xs font-mono text-center mt-2">
+        Miss the deadline → Enclave releases keys → Heirs notified atomically
+      </p>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- SLIDE 5: TECHNICAL ARCHITECTURE -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="slide max-w-5xl w-full flex-col text-left gap-8">
+      <span class="text-xs font-mono tracking-widest accent-amber uppercase">Slide 05 // Architecture</span>
+      <h2 class="text-3xl md:text-4xl font-bold tracking-tight">
+        Securing the <span class="accent-cyan">Succession Line</span>
+      </h2>
+      <div class="grid md:grid-cols-2 gap-6">
+        <!-- Left: stack diagram -->
+        <div class="bg-surface rounded-2xl p-6 border border-slate-800/60">
+          <div class="text-[10px] font-mono text-slate-600 uppercase mb-4">Tech Stack</div>
+          <div class="space-y-3">
+            <div class="flex items-center gap-3 text-sm">
+              <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+              <span class="text-slate-300 font-mono text-xs">Next.js 16</span>
+              <span class="text-slate-600 text-xs ml-auto">Client Dashboard</span>
+            </div>
+            <div class="flex items-center gap-3 text-sm">
+              <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+              <span class="text-slate-300 font-mono text-xs">Node.js Agent</span>
+              <span class="text-slate-600 text-xs ml-auto">T3 Agent Auth SDK</span>
+            </div>
+            <div class="flex items-center gap-3 text-sm">
+              <span class="w-2 h-2 rounded-full bg-red-400"></span>
+              <span class="text-slate-300 font-mono text-xs">Rust WASM Contract</span>
+              <span class="text-slate-600 text-xs ml-auto">TEE Enclave Logic</span>
+            </div>
+            <div class="flex items-center gap-3 text-sm">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span class="text-slate-300 font-mono text-xs">Intel TDX</span>
+              <span class="text-slate-600 text-xs ml-auto">Hardware Boundary</span>
+            </div>
+          </div>
+        </div>
+        <!-- Right: flow -->
+        <div class="bg-surface rounded-2xl p-6 border border-slate-800/60">
+          <div class="text-[10px] font-mono text-slate-600 uppercase mb-4">Data Flow</div>
+          <div class="space-y-2 text-xs font-mono text-slate-400">
+            <div class="flex gap-2"><span class="accent-amber">→</span> Dashboard sends encrypted payload to Agent</div>
+            <div class="flex gap-2"><span class="accent-amber">→</span> Agent calls <span class="accent-cyan">executeAndDecode()</span></div>
+            <div class="flex gap-2"><span class="accent-amber">→</span> TEE seals keys via <span class="accent-cyan">stash</span></div>
+            <div class="flex gap-2"><span class="accent-amber">→</span> TEE monitors <span class="accent-cyan">time/clock</span></div>
+            <div class="flex gap-2"><span class="accent-red">⚡</span> Timeout → <span class="accent-cyan">contracts-call</span> cascade</div>
+            <div class="flex gap-2"><span class="accent-red">⚡</span> Notify heirs via <span class="accent-cyan">http-with-placeholders</span></div>
+            <div class="flex gap-2 text-emerald-400"><span>✓</span> All succeed → vault released</div>
+            <div class="flex gap-2 text-red-400"><span>✗</span> Any fail → full rollback, vault sealed</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- SLIDE 6: LIVE DEMO HIGHLIGHTS -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="slide max-w-5xl w-full flex-col text-left gap-8">
+      <span class="text-xs font-mono tracking-widest accent-amber uppercase">Slide 06 // Live Demo</span>
+      <h2 class="text-3xl md:text-4xl font-bold tracking-tight">
+        Interactive <span class="accent-amber">Sandbox</span> & Rollback Visualizer
+      </h2>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="card p-6">
+          <h3 class="text-sm font-bold accent-amber mb-3 font-display flex items-center gap-2"><i data-lucide="timer" class="w-4 h-4"></i> Countdown Timer</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">Real-time display of remaining seconds according to the enclave's monotonic clock. Cannot be spoofed.</p>
+        </div>
+        <div class="card p-6">
+          <h3 class="text-sm font-bold accent-amber mb-3 font-display flex items-center gap-2"><i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Time-Warp Slider</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">Simulate +15 days of silence. Watch the countdown expire and the cascade trigger in the sandbox.</p>
+        </div>
+        <div class="card p-6">
+          <h3 class="text-sm font-bold accent-cyan mb-3 font-display flex items-center gap-2"><i data-lucide="heart-pulse" class="w-4 h-4"></i> OTP Heartbeat</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">Interactive OTP modal simulating user check-in. Reset the timer with a verified liveness proof.</p>
+        </div>
+        <div class="card p-6">
+          <h3 class="text-sm font-bold accent-red mb-3 font-display flex items-center gap-2"><i data-lucide="bug" class="w-4 h-4"></i> Failure Injection</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">Toggle a failure switch to see the atomic rollback. One step fails → entire cascade reverts. Vault stays sealed.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- SLIDE 7: SPONSOR INTEGRATION -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="slide max-w-5xl w-full flex-col text-left gap-8">
+      <span class="text-xs font-mono tracking-widest accent-amber uppercase">Slide 07 // Integration Depth</span>
+      <h2 class="text-3xl md:text-4xl font-bold tracking-tight">
+        <span class="accent-cyan">5</span> Terminal 3 Host API Methods
+      </h2>
+      <div class="space-y-3 mt-2">
+        <div class="flex items-start gap-4 card p-4">
+          <span class="text-lg font-bold font-display accent-amber w-6 shrink-0">1</span>
+          <div>
+            <code class="accent-cyan text-sm">time/clock</code>
+            <p class="text-slate-400 text-xs mt-1">Queries CPU monotonic clock for tamper-proof time-gating. The heartbeat that can't lie.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4 card p-4">
+          <span class="text-lg font-bold font-display accent-amber w-6 shrink-0">2</span>
+          <div>
+            <code class="accent-cyan text-sm">otp</code>
+            <p class="text-slate-400 text-xs mt-1">Issues and verifies liveness OTP codes. Proof the user is still alive and in control.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4 card p-4">
+          <span class="text-lg font-bold font-display accent-amber w-6 shrink-0">3</span>
+          <div>
+            <code class="accent-cyan text-sm">stash</code>
+            <p class="text-slate-400 text-xs mt-1">Seals vault keys and digital records inside Intel TDX secure storage. Zero plaintext exposure.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4 card p-4">
+          <span class="text-lg font-bold font-display accent-amber w-6 shrink-0">4</span>
+          <div>
+            <code class="accent-cyan text-sm">contracts-call</code>
+            <p class="text-slate-400 text-xs mt-1">Chains multiple executor contracts with full rollback guarantees. All-or-nothing succession.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4 card p-4">
+          <span class="text-lg font-bold font-display accent-amber w-6 shrink-0">5</span>
+          <div>
+            <code class="accent-cyan text-sm">http-with-placeholders</code>
+            <p class="text-slate-400 text-xs mt-1">Contacts beneficiaries blindly. PII substituted at the enclave edge — never logged, never exposed.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- SLIDE 8: MARKET SCALE & TAM -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="slide max-w-5xl w-full flex-col text-left gap-10">
+      <span class="text-xs font-mono tracking-widest accent-amber uppercase">Slide 08 // Market</span>
+      <h2 class="text-3xl md:text-5xl font-bold tracking-tight glow-amber">
+        The Digital Legacy <span class="accent-red">Crisis</span>
+      </h2>
+      <div class="grid md:grid-cols-3 gap-8 mt-2">
+        <div class="text-center">
+          <div class="text-4xl md:text-5xl font-black font-display accent-amber glow-amber">$5B+</div>
+          <div class="text-slate-500 text-xs font-mono mt-2 uppercase">Lost Annually</div>
+          <p class="text-slate-400 text-sm mt-2">Digital assets & crypto permanently lost due to sudden death or missing keys</p>
+        </div>
+        <div class="text-center">
+          <div class="text-4xl md:text-5xl font-black font-display accent-cyan glow-cyan">B2B</div>
+          <div class="text-slate-500 text-xs font-mono mt-2 uppercase">Institutional TAM</div>
+          <p class="text-slate-400 text-sm mt-2">Multi-sig signers, corporate executives, and asset managers need continuity</p>
+        </div>
+        <div class="text-center">
+          <div class="text-4xl md:text-5xl font-black font-display text-slate-300">B2C</div>
+          <div class="text-slate-500 text-xs font-mono mt-2 uppercase">Individual TAM</div>
+          <p class="text-slate-400 text-sm mt-2">Everyday users passing passwords, directives, and messages to family</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- SLIDE 9: COMPETITIVE EDGE -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="slide max-w-5xl w-full flex-col text-left gap-8">
+      <span class="text-xs font-mono tracking-widest accent-amber uppercase">Slide 09 // Competitive Edge</span>
+      <h2 class="text-3xl md:text-4xl font-bold tracking-tight">
+        Epoch vs. <span class="text-slate-500">The Alternatives</span>
+      </h2>
+      <div class="overflow-x-auto">
+        <table>
+          <thead>
+            <tr>
+              <th class="accent-amber">Feature</th>
+              <th>Web2 Custodial</th>
+              <th>On-Chain Smart Contracts</th>
+              <th class="accent-amber">Epoch (TEE)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="font-semibold text-slate-300">Privacy</td>
+              <td class="loser">Low — Plaintext custody</td>
+              <td class="loser">None — Public ledger</td>
+              <td class="winner">✦ High — Enclave sealed</td>
+            </tr>
+            <tr>
+              <td class="font-semibold text-slate-300">Tamper-Proof Clock</td>
+              <td class="loser">Low — Software VM</td>
+              <td class="text-slate-300">High — Block timestamp</td>
+              <td class="winner">✦ High — Hardware clock</td>
+            </tr>
+            <tr>
+              <td class="font-semibold text-slate-300">Rollback Guarantees</td>
+              <td class="loser">None</td>
+              <td class="text-slate-300">High — EVM rollback</td>
+              <td class="winner">✦ High — TEE contracts-call</td>
+            </tr>
+            <tr>
+              <td class="font-semibold text-slate-300">PII Protection</td>
+              <td class="loser">None — KYC leaked</td>
+              <td class="loser">None</td>
+              <td class="winner">✦ High — Blind placeholders</td>
+            </tr>
+            <tr>
+              <td class="font-semibold text-slate-300">Offline Capable</td>
+              <td class="loser">No</td>
+              <td class="loser">Needs gas + RPC</td>
+              <td class="winner">✦ Yes — Enclave-native</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- SLIDE 10: PRODUCT ROADMAP -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="slide max-w-5xl w-full flex-col text-left gap-8">
+      <span class="text-xs font-mono tracking-widest accent-amber uppercase">Slide 10 // Roadmap</span>
+      <h2 class="text-3xl md:text-4xl font-bold tracking-tight">
+        30 / 60 / 90 Day <span class="accent-cyan">Vision</span>
+      </h2>
+      <div class="grid md:grid-cols-3 gap-6 mt-2">
+        <div class="card p-6 relative overflow-hidden">
+          <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-amber-400"></div>
+          <div class="text-xs font-mono accent-amber uppercase mb-3">30 Days</div>
+          <h3 class="text-base font-bold mb-2">EVM Integration</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">ERC-7702 smart account triggers for automated on-chain asset transfer upon switch activation.</p>
+        </div>
+        <div class="card p-6 relative overflow-hidden">
+          <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 to-cyan-400"></div>
+          <div class="text-xs font-mono accent-cyan uppercase mb-3">60 Days</div>
+          <h3 class="text-base font-bold mb-2">Mobile + Biometrics</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">Native mobile app with Passkey biometric check-ins. Heartbeat from your fingerprint.</p>
+        </div>
+        <div class="card p-6 relative overflow-hidden">
+          <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-emerald-400"></div>
+          <div class="text-xs font-mono accent-green uppercase mb-3">90 Days</div>
+          <h3 class="text-base font-bold mb-2">Multi-Party Consensus</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">2-of-3 guardian verification. Lawyers, family, or trustees must co-sign before release.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- SLIDE 11: TEAM -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="slide max-w-5xl w-full flex-col text-left gap-8">
+      <span class="text-xs font-mono tracking-widest accent-amber uppercase">Slide 11 // Team</span>
+      <h2 class="text-3xl md:text-4xl font-bold tracking-tight">
+        Built by <span class="accent-amber">Security-First</span> Engineers
+      </h2>
+      <div class="md:flex gap-8 items-start mt-2">
+        <div class="card p-8 flex-1">
+          <div class="mb-4 accent-amber"><i data-lucide="user" class="w-10 h-10"></i></div>
+          <h3 class="text-lg font-bold mb-2 font-display">Lead Engineer</h3>
+          <p class="text-slate-400 text-sm leading-relaxed mb-4">Full-stack developer specializing in WASM smart contracts, secure enclaves, and cryptographic primitives.</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="text-[10px] font-mono px-2 py-1 bg-slate-800 rounded text-slate-400">Rust/WASM</span>
+            <span class="text-[10px] font-mono px-2 py-1 bg-slate-800 rounded text-slate-400">TypeScript</span>
+            <span class="text-[10px] font-mono px-2 py-1 bg-slate-800 rounded text-slate-400">TEE/TDX</span>
+            <span class="text-[10px] font-mono px-2 py-1 bg-slate-800 rounded text-slate-400">ZK Systems</span>
+            <span class="text-[10px] font-mono px-2 py-1 bg-slate-800 rounded text-slate-400">Next.js</span>
+          </div>
+        </div>
+        <div class="flex-1 mt-6 md:mt-0">
+          <div class="card-cyan p-6 mb-4">
+            <div class="text-xs font-mono accent-cyan uppercase mb-2">Vision</div>
+            <p class="text-slate-300 text-sm italic leading-relaxed">"Making digital inheritance trustless and accessible to everyone — without surrendering your keys to anyone, ever."</p>
+          </div>
+          <div class="card p-6">
+            <div class="text-xs font-mono accent-amber uppercase mb-2">Track Record</div>
+            <p class="text-slate-400 text-sm leading-relaxed">20+ hackathon submissions across cryptography, DeFi, AI agents, and zero-knowledge systems.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- SLIDE 12: ASK / CONCLUSION -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="slide max-w-5xl w-full flex-col items-center text-center gap-8">
+      <span class="text-xs font-mono tracking-widest accent-amber uppercase">Slide 12 // Conclusion</span>
+      <h2 class="text-4xl md:text-6xl font-black tracking-tighter glow-amber font-display leading-tight">
+        Your AI tried.<br>
+        <span class="accent-cyan">Epoch delivered.</span>
+      </h2>
+      <p class="text-slate-400 text-lg max-w-2xl leading-relaxed">
+        The first trustless dead-man's switch securing digital succession with hardware-isolated enclaves. No custodians. No plaintext. No single point of failure.
+      </p>
+      <div class="flex flex-wrap gap-4 justify-center mt-4">
+        <a href="https://epoch.edycu.dev" target="_blank" class="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-400 text-black font-bold rounded-xl text-sm hover:scale-105 transition-transform flex items-center gap-2">
+          <i data-lucide="rocket" class="w-4 h-4"></i> Live Demo
+        </a>
+        <a href="https://github.com/edycutjong/epoch" target="_blank" class="px-6 py-3 card text-slate-300 font-semibold rounded-xl text-sm hover:border-amber-400/40 transition-all">
+          GitHub →
+        </a>
+      </div>
+      <div class="text-xs font-mono text-slate-600 mt-8">
+        Built for T3 Agent Dev Kit Bounty Challenge · DoraHacks 2026
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Navigation Footer -->
+  <footer class="h-14 border-t border-slate-800/50 bg-base/80 backdrop-blur-lg flex items-center justify-between px-8 z-10 shrink-0">
+    <div class="text-[10px] font-mono text-slate-600 uppercase tracking-wider">
+      Epoch Pitch Deck · T3 ADK Launch 2026
+    </div>
+    <div class="flex items-center gap-4">
+      <button onclick="prevSlide()" class="px-4 py-1.5 border border-slate-800 hover:border-amber-400/40 rounded-lg text-xs font-mono text-slate-400 hover:text-amber-400 transition-all">← PREV</button>
+      <span id="slide-num" class="text-xs font-mono accent-amber min-w-[60px] text-center">1 / 12</span>
+      <button onclick="nextSlide()" class="px-4 py-1.5 border border-slate-800 hover:border-amber-400/40 rounded-lg text-xs font-mono text-slate-400 hover:text-amber-400 transition-all">NEXT →</button>
+    </div>
+  </footer>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const slideNum = document.getElementById('slide-num');
+
+    function updateSlides() {
+      slides.forEach((slide, index) => {
+        slide.classList.toggle('active', index === currentSlide);
+      });
+      slideNum.textContent = `${currentSlide + 1} / ${slides.length}`;
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        updateSlides();
+      }
+    }
+
+    function nextSlide() {
+      if (currentSlide < slides.length - 1) {
+        currentSlide++;
+        updateSlides();
+      }
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft' || e.key === 'PageUp') prevSlide();
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+        e.preventDefault();
+        nextSlide();
+      }
+    });
+
+    // Swipe navigation for mobile
+    let touchStartX = 0;
+    document.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
+    document.addEventListener('touchend', (e) => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      if (Math.abs(dx) > 50) {
+        if (dx > 0) prevSlide();
+        else nextSlide();
+      }
+    });
+  </script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

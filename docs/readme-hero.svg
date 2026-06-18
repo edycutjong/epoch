@@ -1,0 +1,411 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="100%" height="100%">
+  <defs>
+    <!-- Brand Gradients -->
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffaa00"/>
+      <stop offset="100%" stop-color="#00f0ff"/>
+    </linearGradient>
+    <linearGradient id="successGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#22c55e"/>
+      <stop offset="100%" stop-color="#00f0ff"/>
+    </linearGradient>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffaa00"/>
+      <stop offset="100%" stop-color="#00f0ff"/>
+    </linearGradient>
+
+    <!-- Ambient Glow Radials -->
+    <radialGradient id="glowAmber" cx="15%" cy="20%" r="65%">
+      <stop offset="0%" stop-color="#ffaa00" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#ffaa00" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowCyan" cx="85%" cy="80%" r="65%">
+      <stop offset="0%" stop-color="#00f0ff" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#00f0ff" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Tech Grid Pattern -->
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255, 255, 255, 0.025)" stroke-width="1"/>
+    </pattern>
+
+    <!-- Glow Filter for Neon Accents -->
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <style>
+      /* Enclave Ring Rotators */
+      .enclave-rotator-clockwise {
+        transform-origin: 910px 245px;
+        animation: rotate-cw 25s linear infinite;
+      }
+      .enclave-rotator-counter {
+        transform-origin: 910px 245px;
+        animation: rotate-ccw 20s linear infinite;
+      }
+      @keyframes rotate-cw {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      @keyframes rotate-ccw {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(-360deg); }
+      }
+
+      /* Heartbeat scrolling wave */
+      .heartbeat-wave {
+        stroke-dasharray: 210;
+        stroke-dashoffset: 420;
+        animation: heartbeat-scroll 4s linear infinite;
+      }
+      @keyframes heartbeat-scroll {
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+
+      /* Status pulse ring */
+      .status-pulse-ring {
+        transform-origin: 650px 80px;
+        animation: ring-pulse 2.5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+      }
+      @keyframes ring-pulse {
+        0% {
+          transform: scale(0.7);
+          opacity: 0.8;
+        }
+        100% {
+          transform: scale(1.8);
+          opacity: 0;
+        }
+      }
+
+      /* Ambient glows pulsing */
+      .ambient-glow-1 {
+        animation: glow-pulse-1 8s ease-in-out infinite;
+      }
+      .ambient-glow-2 {
+        animation: glow-pulse-2 10s ease-in-out infinite;
+      }
+      @keyframes glow-pulse-1 {
+        0%, 100% { opacity: 0.85; }
+        50% { opacity: 1.1; }
+      }
+      @keyframes glow-pulse-2 {
+        0%, 100% { opacity: 0.9; }
+        50% { opacity: 1.15; }
+      }
+
+      /* Terminal Cursor Blinking */
+      .blinking-cursor {
+        animation: blink 1.2s step-end infinite;
+      }
+      @keyframes blink {
+        50% { opacity: 0; }
+      }
+
+      /* Vault Shield Glow */
+      .vault-contour {
+        animation: vault-glow 6s ease-in-out infinite;
+      }
+      @keyframes vault-glow {
+        0%, 100% {
+          stroke-width: 12;
+          opacity: 0.9;
+        }
+        50% {
+          stroke-width: 14;
+          opacity: 1;
+        }
+      }
+
+      /* Trickling Sand dash flow */
+      .sand-stream-line {
+        animation: trickle 0.8s linear infinite;
+      }
+      @keyframes trickle {
+        to {
+          stroke-dashoffset: -24;
+        }
+      }
+
+      /* Active Radar Sweep Hand */
+      .active-hand {
+        transform-origin: 256px 256px;
+        animation: radar-sweep 4s linear infinite;
+      }
+      @keyframes radar-sweep {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+
+      /* Core Pulsing Lock */
+      .core-lock {
+        animation: lock-pulse 2s ease-in-out infinite;
+      }
+      @keyframes lock-pulse {
+        0%, 100% {
+          r: 14;
+        }
+        50% {
+          r: 16;
+        }
+      }
+    </style>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1280" height="640" rx="24" fill="#0a0b0d"/>
+
+  <!-- Ambient Glow Layers -->
+  <rect width="1280" height="640" rx="24" fill="url(#glowAmber)" class="ambient-glow-1"/>
+  <rect width="1280" height="640" rx="24" fill="url(#glowCyan)" class="ambient-glow-2"/>
+
+  <!-- Technical Grid Overlay -->
+  <rect width="1280" height="640" rx="24" fill="url(#grid)"/>
+
+  <!-- Corner Brackets (Cybernetic details) -->
+  <path d="M 30 50 L 30 30 L 50 30" fill="none" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2"/>
+  <path d="M 1230 30 L 1250 30 L 1250 50" fill="none" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2"/>
+  <path d="M 30 590 L 30 610 L 50 610" fill="none" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2"/>
+  <path d="M 1230 610 L 1250 610 L 1250 590" fill="none" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2"/>
+
+  <!-- ==================== LEFT COLUMN: BRANDING & FEATURES ==================== -->
+  
+  <!-- Brand Title -->
+  <g transform="translate(80, 145)">
+    <path d="M54.948 0L4.408 0L4.408-54.720L54.948-54.720L54.948-42.864L16.340-42.864L16.340-33.288L47.424-33.288L47.424-21.432L16.340-21.432L16.340-11.856L54.948-11.856L54.948 0Z M82.252 0L70.472 0L70.472-54.644L113.868-54.644Q116.984-54.644 119.530-53.124Q122.076-51.604 123.634-49.020Q125.192-46.436 125.192-43.396L125.192-43.396L125.192-29.260Q125.192-26.220 123.634-23.636Q122.076-21.052 119.530-19.532Q116.984-18.012 113.868-18.012L113.868-18.012L82.252-17.936L82.252 0ZM82.252-29.868L82.252-29.868L113.260-29.868Q113.260-29.868 113.260-29.868Q113.260-29.868 113.260-29.868L113.260-29.868L113.260-42.864Q113.260-42.864 113.260-42.864Q113.260-42.864 113.260-42.864L113.260-42.864L82.252-42.864Q82.252-42.864 82.252-42.864Q82.252-42.864 82.252-42.864L82.252-42.864L82.252-29.868Q82.252-29.868 82.252-29.868Q82.252-29.868 82.252-29.868Z M181.908 0L149.684 0Q146.644 0 144.060-1.520Q141.476-3.040 139.956-5.624Q138.436-8.208 138.436-11.248L138.436-11.248L138.436-43.472Q138.436-46.588 139.956-49.134Q141.476-51.680 144.060-53.200Q146.644-54.720 149.684-54.720L149.684-54.720L181.908-54.720Q184.948-54.720 187.494-53.200Q190.040-51.680 191.598-49.134Q193.156-46.588 193.156-43.472L193.156-43.472L193.156-11.248Q193.156-8.208 191.598-5.624Q190.040-3.040 187.494-1.520Q184.948 0 181.908 0L181.908 0ZM150.216-11.856L150.216-11.856L181.224-11.856Q181.224-11.856 181.224-11.856Q181.224-11.856 181.224-11.856L181.224-11.856L181.224-42.864Q181.224-42.864 181.224-42.864Q181.224-42.864 181.224-42.864L181.224-42.864L150.216-42.864Q150.216-42.864 150.216-42.864Q150.216-42.864 150.216-42.864L150.216-42.864L150.216-11.856Q150.216-11.856 150.216-11.856Q150.216-11.856 150.216-11.856Z M264.084 0L220.764 0Q217.648 0 215.102-1.520Q212.556-3.040 211.036-5.586Q209.516-8.132 209.516-11.248L209.516-11.248L209.516-43.472Q209.516-46.588 211.036-49.134Q212.556-51.680 215.102-53.200Q217.648-54.720 220.764-54.720L220.764-54.720L264.084-54.720L264.084-42.864L223.804-42.864Q222.588-42.864 221.942-42.256Q221.296-41.648 221.296-40.356L221.296-40.356L221.296-14.364Q221.296-13.148 221.942-12.502Q222.588-11.856 223.804-11.856L223.804-11.856L264.084-11.856L264.084 0Z M291.844 0L280.064 0L280.064-54.720L291.844-54.720L291.844-33.288L324.144-33.288L324.144-54.720L335.924-54.720L335.924 0L324.144 0L324.144-21.432L291.844-21.432L291.844 0Z" fill="url(#textGrad)"/>
+  </g>
+  
+  <!-- Subtitle -->
+  <text x="80" y="195" fill="#94a3b8" font-family="'Inter', -apple-system, sans-serif" font-size="18" font-weight="600" letter-spacing="1">TEE-Secured Atomic Dead-Man's Switch</text>
+
+  <!-- Feature List -->
+  <!-- Feature 1 -->
+  <g transform="translate(0, 0)">
+    <rect x="80" y="246" width="4" height="36" rx="2" fill="#ffaa00"/>
+    <text x="96" y="262" fill="#f8fafc" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="14" font-weight="600">01 / SECURE VAULT</text>
+    <text x="96" y="278" fill="#94a3b8" font-family="'Inter', -apple-system, sans-serif" font-size="12">Client-side envelope encryption before enclave sealing</text>
+  </g>
+
+  <!-- Feature 2 -->
+  <g transform="translate(0, 60)">
+    <rect x="80" y="246" width="4" height="36" rx="2" fill="#00f0ff"/>
+    <text x="96" y="262" fill="#f8fafc" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="14" font-weight="600">02 / MONOTONIC CLOCK GUARD</text>
+    <text x="96" y="278" fill="#94a3b8" font-family="'Inter', -apple-system, sans-serif" font-size="12">Tamper-proof hardware-based countdown monitoring</text>
+  </g>
+
+  <!-- Feature 3 -->
+  <g transform="translate(0, 120)">
+    <rect x="80" y="246" width="4" height="36" rx="2" fill="#22c55e"/>
+    <text x="96" y="262" fill="#f8fafc" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="14" font-weight="600">03 / PRIVACY-BLIND EGRESS</text>
+    <text x="96" y="278" fill="#94a3b8" font-family="'Inter', -apple-system, sans-serif" font-size="12">PII markers swapped in secure memory at network boundary</text>
+  </g>
+
+  <!-- Feature 4 -->
+  <g transform="translate(0, 180)">
+    <rect x="80" y="246" width="4" height="36" rx="2" fill="url(#brandGrad)"/>
+    <text x="96" y="262" fill="#f8fafc" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="14" font-weight="600">04 / ATOMIC CASCADE ROLLBACK</text>
+    <text x="96" y="278" fill="#94a3b8" font-family="'Inter', -apple-system, sans-serif" font-size="12">All-or-nothing payout guarantees with verified VCs</text>
+  </g>
+
+  <!-- Tech Pills -->
+  <g transform="translate(80, 520)">
+    <rect width="100" height="28" rx="14" fill="rgba(255, 255, 255, 0.03)" stroke="rgba(255, 255, 255, 0.1)" stroke-width="1"/>
+    <text x="50" y="18" fill="#94a3b8" font-family="'JetBrains Mono', monospace" font-size="12" text-anchor="middle">Next.js 16</text>
+  </g>
+  <g transform="translate(195, 520)">
+    <rect width="100" height="28" rx="14" fill="rgba(255, 255, 255, 0.03)" stroke="rgba(255, 255, 255, 0.1)" stroke-width="1"/>
+    <text x="50" y="18" fill="#94a3b8" font-family="'JetBrains Mono', monospace" font-size="12" text-anchor="middle">Rust WASM</text>
+  </g>
+  <g transform="translate(310, 520)">
+    <rect width="100" height="28" rx="14" fill="rgba(255, 255, 255, 0.03)" stroke="rgba(255, 255, 255, 0.1)" stroke-width="1"/>
+    <text x="50" y="18" fill="#94a3b8" font-family="'JetBrains Mono', monospace" font-size="12" text-anchor="middle">Intel TDX</text>
+  </g>
+  <g transform="translate(425, 520)">
+    <rect width="110" height="28" rx="14" fill="rgba(255, 255, 255, 0.03)" stroke="rgba(255, 255, 255, 0.1)" stroke-width="1"/>
+    <text x="55" y="18" fill="#94a3b8" font-family="'JetBrains Mono', monospace" font-size="12" text-anchor="middle">MIT License</text>
+  </g>
+
+
+  <!-- ==================== RIGHT COLUMN: PIPELINE & TELEMETRY ==================== -->
+  
+  <!-- Main Console Panel -->
+  <rect x="620" y="60" width="580" height="520" rx="16" fill="rgba(18, 20, 26, 0.8)" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1.5"/>
+  <path d="M 620 100 L 1200 100" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1"/>
+
+  <!-- Panel Header Status Indicators -->
+  <circle cx="650" cy="80" r="5" fill="#22c55e"/>
+  <circle cx="650" cy="80" r="8" fill="none" stroke="#22c55e" stroke-width="1.5" opacity="0.5" class="status-pulse-ring"/>
+  <text x="665" y="84" fill="#22c55e" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="12" font-weight="600" letter-spacing="1">ENCLAVE STATUS: ACTIVE</text>
+  <text x="1170" y="84" fill="#94a3b8" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="11" text-anchor="end">TDX CORE // MEM SECURE</text>
+
+  <!-- Flowing Circuit Connecting Lines -->
+  <!-- Circuit Line 1 (Left Box to Center) -->
+  <path d="M 720 370 V 315 L 810 245" fill="none" stroke="rgba(255, 170, 0, 0.25)" stroke-width="1.5"/>
+  <circle r="4" fill="#ffaa00">
+    <animateMotion dur="3s" repeatCount="indefinite" path="M 720 370 V 315 L 810 245" />
+  </circle>
+
+  <!-- Circuit Line 2 (Middle Box to Center) -->
+  <path d="M 910 370 V 290" fill="none" stroke="rgba(0, 240, 255, 0.25)" stroke-width="1.5"/>
+  <circle r="4" fill="#00f0ff">
+    <animateMotion dur="2.5s" repeatCount="indefinite" path="M 910 370 V 290" />
+  </circle>
+
+  <!-- Circuit Line 3 (Right Box to Center) -->
+  <path d="M 1100 370 V 315 L 1010 245" fill="none" stroke="rgba(34, 197, 94, 0.25)" stroke-width="1.5"/>
+  <circle r="4" fill="#22c55e">
+    <animateMotion dur="3.2s" repeatCount="indefinite" path="M 1100 370 V 315 L 1010 245" />
+  </circle>
+
+  <!-- ==================== CENTRAL ENCLAVE VISUALIZER ==================== -->
+  <g>
+    <!-- Outer Enclave Boundary Rotators -->
+    <circle class="enclave-rotator-clockwise" cx="910" cy="245" r="110" fill="none" stroke="url(#brandGrad)" stroke-width="2.5" stroke-dasharray="12 6" opacity="0.3"/>
+    <circle class="enclave-rotator-counter" cx="910" cy="245" r="120" fill="none" stroke="rgba(0, 240, 255, 0.15)" stroke-width="1.5" stroke-dasharray="35 15" opacity="0.6"/>
+    
+    <!-- Heartbeat scrolling signal -->
+    <path d="M 805 245 H 855 L 863 220 L 871 275 L 879 235 L 887 255 L 895 245 H 925 L 933 220 L 941 275 L 949 235 L 957 255 L 965 245 H 1015" fill="none" stroke="#00f0ff" stroke-width="2" class="heartbeat-wave" stroke-linecap="round" opacity="0.25"/>
+
+    <!-- Central Shield Hourglass Vault (Rendered relative to (256, 256) inside scaled matrix) -->
+    <!-- Translate center to 910, 245 and scale down to 0.65. Offset origin (256,256) by (-256, -256) -->
+    <g transform="translate(910, 245) scale(0.65) translate(-256, -256)" filter="url(#neonGlow)">
+      <!-- Vault Outer Contour -->
+      <path class="vault-contour" d="M 256 140
+               C 320 140, 360 160, 360 210
+               C 360 300, 290 350, 256 380
+               C 222 350, 152 300, 152 210
+               C 152 160, 192 140, 256 140 Z"
+            fill="none"
+            stroke="url(#brandGrad)"
+            stroke-width="12"
+            stroke-linejoin="round"/>
+
+      <!-- Hourglass Rotator Group -->
+      <g>
+        <animateTransform
+          attributeName="transform"
+          type="rotate"
+          values="0 256 256; 0 256 256; 180 256 256; 180 256 256; 360 256 256"
+          keyTimes="0; 0.4333; 0.5; 0.9333; 1"
+          dur="18s"
+          calcMode="spline"
+          keySplines="0 0 1 1; 0.77 0 0.175 1; 0 0 1 1; 0.77 0 0.175 1"
+          repeatCount="indefinite"/>
+
+        <!-- Glass Bulb Outlines -->
+        <path d="M 220 190 H 292 L 256 256 Z" fill="none" stroke="url(#brandGrad)" stroke-width="4" opacity="0.3"/>
+        <path d="M 256 256 L 220 322 H 292 Z" fill="none" stroke="url(#brandGrad)" stroke-width="4" opacity="0.3"/>
+
+        <!-- Upper Sand (Draining) -->
+        <polygon fill="url(#brandGrad)" opacity="0.85" points="220,190 292,190 256,256">
+          <animate
+            attributeName="points"
+            values="
+              220,190 292,190 256,256;
+              256,256 256,256 256,256;
+              256,190 256,190 256,190;
+              220,190 292,190 256,256;
+              220,190 292,190 256,256"
+            keyTimes="0; 0.4333; 0.5; 0.9333; 1"
+            dur="18s"
+            repeatCount="indefinite"/>
+        </polygon>
+
+        <!-- Lower Sand (Filling) -->
+        <polygon fill="url(#brandGrad)" opacity="0.85" points="256,322 256,322 256,322">
+          <animate
+            attributeName="points"
+            values="
+              256,322 256,322 256,322;
+              256,256 220,322 292,322;
+              256,256 220,322 292,322;
+              256,256 256,256 256,256;
+              256,322 256,322 256,322"
+            keyTimes="0; 0.4333; 0.5; 0.9333; 1"
+            dur="18s"
+            repeatCount="indefinite"/>
+        </polygon>
+      </g>
+
+      <!-- Trickle Stream (Downward flowing sand) -->
+      <line class="sand-stream-line" x1="256" y1="258" x2="256" y2="316"
+            stroke="url(#brandGrad)" stroke-width="3"
+            stroke-dasharray="4 8" stroke-linecap="round">
+        <animate
+          attributeName="opacity"
+          values="0.8; 0.8; 0; 0.8; 0.8; 0; 0.8"
+          keyTimes="0; 0.42; 0.4333; 0.5; 0.92; 0.9333; 1"
+          dur="18s"
+          repeatCount="indefinite"/>
+      </line>
+
+      <!-- Core Enclave Lock Switch -->
+      <circle class="core-lock" cx="256" cy="256" r="14" fill="#0a0b0d" stroke="url(#brandGrad)" stroke-width="6"/>
+
+      <!-- Active Pulse Sweep Hand -->
+      <line class="active-hand" x1="256" y1="256" x2="256" y2="210" stroke="url(#brandGrad)" stroke-width="6" stroke-linecap="round"/>
+    </g>
+
+    <!-- Center target crosshair -->
+    <circle cx="910" cy="245" r="5" fill="url(#brandGrad)"/>
+  </g>
+
+  <!-- ==================== STAGE CARDS ==================== -->
+  
+  <!-- Step 1 Card: ARM -->
+  <g transform="translate(0, 0)">
+    <rect x="650" y="370" width="140" height="70" rx="8" fill="rgba(255, 170, 0, 0.02)" stroke="rgba(255, 170, 0, 0.25)" stroke-width="1.5"/>
+    <text x="720" y="392" fill="#ffaa00" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="12" font-weight="600" text-anchor="middle">1. ARM</text>
+    <text x="720" y="410" fill="#94a3b8" font-family="'Inter', -apple-system, sans-serif" font-size="10" text-anchor="middle">Seal Metadata</text>
+    <text x="720" y="424" fill="#475569" font-family="'Inter', -apple-system, sans-serif" font-size="9" text-anchor="middle">Start Countdown</text>
+  </g>
+
+  <!-- Step 2 Card: TRACK -->
+  <g transform="translate(0, 0)">
+    <rect x="840" y="370" width="140" height="70" rx="8" fill="rgba(0, 240, 255, 0.02)" stroke="rgba(0, 240, 255, 0.25)" stroke-width="1.5"/>
+    <text x="910" y="392" fill="#00f0ff" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="12" font-weight="600" text-anchor="middle">2. TRACK</text>
+    <text x="910" y="410" fill="#94a3b8" font-family="'Inter', -apple-system, sans-serif" font-size="10" text-anchor="middle">Verify Heartbeats</text>
+    <text x="910" y="424" fill="#475569" font-family="'Inter', -apple-system, sans-serif" font-size="9" text-anchor="middle">TOTP Validation</text>
+  </g>
+
+  <!-- Step 3 Card: CASCADE -->
+  <g transform="translate(0, 0)">
+    <rect x="1030" y="370" width="140" height="70" rx="8" fill="rgba(34, 197, 94, 0.02)" stroke="rgba(34, 197, 94, 0.25)" stroke-width="1.5"/>
+    <text x="1100" y="392" fill="#22c55e" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="12" font-weight="600" text-anchor="middle">3. CASCADE</text>
+    <text x="1100" y="410" fill="#94a3b8" font-family="'Inter', -apple-system, sans-serif" font-size="10" text-anchor="middle">Atomic Dispatch</text>
+    <text x="1100" y="424" fill="#475569" font-family="'Inter', -apple-system, sans-serif" font-size="9" text-anchor="middle">Blind Egress</text>
+  </g>
+
+  <!-- ==================== TELEMETRY TERMINAL BOX ==================== -->
+  <g>
+    <rect x="650" y="465" width="520" height="85" rx="8" fill="rgba(0, 0, 0, 0.4)" stroke="rgba(255, 255, 255, 0.05)" stroke-width="1" />
+    
+    <!-- Term line 1 -->
+    <text x="665" y="485" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="11">
+      <tspan fill="#475569">&gt;</tspan> <tspan fill="#ffaa00">[08:12:04]</tspan> <tspan fill="#f8fafc">SYS: INITIALIZING SECURE TEE MEMORY</tspan>
+    </text>
+
+    <!-- Term line 2 -->
+    <text x="665" y="505" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="11">
+      <tspan fill="#475569">&gt;</tspan> <tspan fill="#00f0ff">[08:12:05]</tspan> <tspan fill="#f8fafc">SEC: MONOTONIC CLOCK ARMED &amp; SEALED</tspan>
+    </text>
+
+    <!-- Term line 3 -->
+    <text x="665" y="525" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="11">
+      <tspan fill="#475569">&gt;</tspan> <tspan fill="#22c55e">[08:12:06]</tspan> <tspan fill="#f8fafc">AUTH: TOTP ACTIVE // WAITING FOR PULSE</tspan>
+    </text>
+
+    <!-- Term line 4 / Input -->
+    <text x="665" y="545" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="11">
+      <tspan fill="#00f0ff">root@epoch-enclave:~#</tspan> <tspan fill="#f8fafc" class="blinking-cursor">_</tspan>
+    </text>
+  </g>
+
+</svg>
