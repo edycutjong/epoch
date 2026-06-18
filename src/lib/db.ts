@@ -8,6 +8,7 @@ export interface DbSchema {
   profiles: Record<string, any>;
   legacyTargets: any[];
   dispatchedNotifications: any[];
+  stash: Record<string, string>;
 }
 
 export function initDb() {
@@ -30,11 +31,11 @@ export function initDb() {
     };
 
     const defaultVault = {
-      stashRefs: ['stash-ref-1'],
+      stashRefs: ['stash://ref-1'],
       encryptedKeys: '0x-ephemeral-ecdh-aes-gcm-key-agreement-vector'
     };
 
-    const initialDb = {
+    const initialDb: DbSchema = {
       kv: {
         [`epoch:switch:${switchId}`]: JSON.stringify(defaultSwitch),
         [`epoch:vault:${switchId}`]: JSON.stringify(defaultVault)
@@ -68,7 +69,10 @@ export function initDb() {
           template: '{"recipient":"spouse@legacy-switch.org","content":"Sealed message released."}'
         }
       ],
-      dispatchedNotifications: []
+      dispatchedNotifications: [],
+      stash: {
+        'stash://ref-1': Buffer.from('secret-legacy-document-bytes').toString('base64')
+      }
     };
 
     fs.writeFileSync(DB_PATH, JSON.stringify(initialDb, null, 2));
@@ -80,9 +84,13 @@ export function readDb(): DbSchema {
   initDb();
   const content = fs.readFileSync(DB_PATH, 'utf-8');
   try {
-    return JSON.parse(content);
+    const data = JSON.parse(content);
+    if (!data.stash) {
+      data.stash = {};
+    }
+    return data;
   } catch (e) {
-    return { kv: {}, profiles: {}, legacyTargets: [], dispatchedNotifications: [] };
+    return { kv: {}, profiles: {}, legacyTargets: [], dispatchedNotifications: [], stash: {} };
   }
 }
 
@@ -102,10 +110,22 @@ export function setKv(key: string, value: string): void {
   writeDb(db);
 }
 
+export function getStash(ref: string): string | null {
+  const db = readDb();
+  return db.stash[ref] || null;
+}
+
+export function setStash(ref: string, value: string): void {
+  const db = readDb();
+  db.stash[ref] = value;
+  writeDb(db);
+}
+
 export function clearDb(): void {
   if (fs.existsSync(DB_PATH)) {
     fs.unlinkSync(DB_PATH);
   }
   initDb();
 }
+
 

@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { getKv, setKv, readDb, writeDb } from './db';
+import { getKv, setKv, readDb, writeDb, getStash, setStash } from './db';
 
 // Simple base64 encoding helper for VCs
 function base64UrlEncode(str: string): string {
@@ -62,6 +62,33 @@ export async function runWasmContract(
       host_clock_now: (): bigint => {
         // Return current wall clock in milliseconds (bigint for u64)
         return BigInt(Date.now());
+      },
+
+      host_stash_put: (dataPtr: number, dataLen: number, refBufPtr: number, refBufLen: number): number => {
+        const memView = new Uint8Array(wasmMemory.buffer, dataPtr, dataLen);
+        const dataBase64 = Buffer.from(memView).toString('base64');
+        const refId = `ref-${Math.random().toString(36).substr(2, 9)}`;
+        const refStr = `stash://${refId}`;
+        setStash(refStr, dataBase64);
+        
+        console.log(`[Host Stash] Uploaded ${dataLen} bytes to stash, reference: ${refStr}`);
+        return writeStringToWasm(refStr, refBufPtr, refBufLen);
+      },
+
+      host_stash_get: (refPtr: number, refLen: number, dataBufPtr: number, dataBufLen: number): number => {
+        const refStr = readStringFromWasm(refPtr, refLen);
+        const dataBase64 = getStash(refStr);
+        if (dataBase64 === null) {
+          console.error(`[Host Stash] Stash reference not found: ${refStr}`);
+          return -1;
+        }
+        const buffer = Buffer.from(dataBase64, 'base64');
+        
+        const memView = new Uint8Array(wasmMemory.buffer, dataBufPtr, dataBufLen);
+        const writeLen = Math.min(buffer.length, dataBufLen);
+        memView.set(buffer.slice(0, writeLen));
+        console.log(`[Host Stash] Downloaded ${writeLen} bytes from stash: ${refStr}`);
+        return writeLen;
       },
 
       host_http_with_placeholders_post: (

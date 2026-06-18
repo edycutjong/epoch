@@ -20,6 +20,14 @@ extern "C" {
         vc_buf_ptr: *mut u8, vc_buf_len: usize
     ) -> i32;
     fn host_logging_log(msg_ptr: *const u8, msg_len: usize);
+    fn host_stash_put(
+        data_ptr: *const u8, data_len: usize,
+        ref_buf_ptr: *mut u8, ref_buf_len: usize
+    ) -> i32;
+    fn host_stash_get(
+        ref_ptr: *const u8, ref_len: usize,
+        data_buf_ptr: *mut u8, data_buf_len: usize
+    ) -> i32;
 }
 
 
@@ -107,6 +115,38 @@ fn get_now() -> u64 {
 
 fn log(msg: &str) {
     unsafe { host_logging_log(msg.as_ptr(), msg.len()) }
+}
+
+fn stash_put(data: &[u8]) -> Option<String> {
+    let mut ref_buf = vec![0u8; 1024];
+    let res = unsafe {
+        host_stash_put(
+            data.as_ptr(), data.len(),
+            ref_buf.as_mut_ptr(), ref_buf.len()
+        )
+    };
+    if res >= 0 {
+        ref_buf.truncate(res as usize);
+        String::from_utf8(ref_buf).ok()
+    } else {
+        None
+    }
+}
+
+fn stash_get(reference: &str) -> Option<Vec<u8>> {
+    let mut buf = vec![0u8; 65536];
+    let res = unsafe {
+        host_stash_get(
+            reference.as_ptr(), reference.len(),
+            buf.as_mut_ptr(), buf.len()
+        )
+    };
+    if res >= 0 {
+        buf.truncate(res as usize);
+        Some(buf)
+    } else {
+        None
+    }
 }
 
 // Struct Definitions
@@ -387,6 +427,25 @@ pub unsafe extern "C" fn fire_epoch(ptr: *const u8, len: usize) -> u64 {
     
     log("Beginning digital legacy cascade execution...");
     
+    // Verify and retrieve files from stash
+    let mut retrieved_files = Vec::new();
+    for ref_str in &vault_state.stashRefs {
+        if let Some(data) = stash_get(ref_str) {
+            log(&format!("Successfully retrieved file {} from stash (size: {} bytes)", ref_str, data.len()));
+            retrieved_files.push(serde_json::json!({
+                "ref": ref_str,
+                "size": data.len(),
+                "status": "retrieved"
+            }));
+        } else {
+            log(&format!("Warning: failed to retrieve file {} from stash", ref_str));
+            retrieved_files.push(serde_json::json!({
+                "ref": ref_str,
+                "status": "not_found"
+            }));
+        }
+    }
+    
     // Simulate Atomic Cascade Steps
     // Step 1: Egress http-with-placeholders
     let mut step_results = Vec::new();
@@ -467,6 +526,26 @@ pub unsafe extern "C" fn fire_epoch(ptr: *const u8, len: usize) -> u64 {
         "".to_string()
     };
     
+    // Create an audit log manifest and store it to stash
+    let audit_manifest = serde_json::json!({
+        "switchId": switch_state.id,
+        "firedAt": get_now(),
+        "beneficiaries": switch_state.beneficiaries,
+        "vaultStashRefs": vault_state.stashRefs,
+        "encryptedKeys": vault_state.encryptedKeys
+    }).to_string();
+
+    let release_log_ref = match stash_put(audit_manifest.as_bytes()) {
+        Some(s_ref) => {
+            log(&format!("Successfully uploaded release audit manifest to stash: {}", s_ref));
+            s_ref
+        }
+        None => {
+            log("Warning: failed to upload release audit manifest to stash");
+            "".to_string()
+        }
+    };
+    
     // Save state as fired
     switch_state.status = "fired".to_string();
     let updated_json = serde_json::to_string(&switch_state).unwrap();
@@ -478,7 +557,9 @@ pub unsafe extern "C" fn fire_epoch(ptr: *const u8, len: usize) -> u64 {
         "status": "fired",
         "stepsExecuted": step_results,
         "vcReceipt": vc_receipt,
-        "decryptedKeys": vault_state.encryptedKeys
+        "decryptedKeys": vault_state.encryptedKeys,
+        "retrievedFiles": retrieved_files,
+        "releaseLogStashRef": release_log_ref
     });
     
     return_string(response.to_string())
@@ -558,6 +639,7 @@ mod mock_state {
 
     pub struct State {
         pub kv: HashMap<String, String>,
+        pub stash: HashMap<String, Vec<u8>>,
         pub now: u64,
         pub http_fail: bool,
         pub vc_fail: bool,
@@ -566,6 +648,7 @@ mod mock_state {
     thread_local! {
         pub static STATE: RefCell<State> = RefCell::new(State {
             kv: HashMap::new(),
+            stash: HashMap::new(),
             now: 1729600000000,
             http_fail: false,
             vc_fail: false,
@@ -664,6 +747,54 @@ pub unsafe extern "C" fn host_logging_log(msg_ptr: *const u8, msg_len: usize) {
 }
 
 #[cfg(test)]
+#[no_mangle]
+pub unsafe extern "C" fn host_stash_put(
+    data_ptr: *const u8, data_len: usize,
+    ref_buf_ptr: *mut u8, ref_buf_len: usize
+) -> i32 {
+    let data_slice = std::slice::from_raw_parts(data_ptr, data_len);
+    let data = data_slice.to_vec();
+    
+    use sha2::Digest;
+    let hash = format!("{:x}", sha2::Sha256::digest(&data));
+    let reference = format!("stash://ref-{}", &hash[0..8]);
+    
+    let ref_bytes = reference.as_bytes();
+    if ref_bytes.len() <= ref_buf_len {
+        std::ptr::copy_nonoverlapping(ref_bytes.as_ptr(), ref_buf_ptr, ref_bytes.len());
+        mock_state::STATE.with(|state| {
+            state.borrow_mut().stash.insert(reference.clone(), data);
+        });
+        ref_bytes.len() as i32
+    } else {
+        -1
+    }
+}
+
+#[cfg(test)]
+#[no_mangle]
+pub unsafe extern "C" fn host_stash_get(
+    ref_ptr: *const u8, ref_len: usize,
+    data_buf_ptr: *mut u8, data_buf_len: usize
+) -> i32 {
+    let ref_slice = std::slice::from_raw_parts(ref_ptr, ref_len);
+    let reference = std::str::from_utf8(ref_slice).unwrap();
+    mock_state::STATE.with(|state| {
+        let state = state.borrow();
+        if let Some(data) = state.stash.get(reference) {
+            if data.len() <= data_buf_len {
+                std::ptr::copy_nonoverlapping(data.as_ptr(), data_buf_ptr, data.len());
+                data.len() as i32
+            } else {
+                -1
+            }
+        } else {
+            -1
+        }
+    })
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -671,6 +802,7 @@ mod tests {
         mock_state::STATE.with(|state| {
             let mut s = state.borrow_mut();
             s.kv.clear();
+            s.stash.clear();
             s.now = 1729600000000;
             s.http_fail = false;
             s.vc_fail = false;
@@ -833,9 +965,27 @@ mod tests {
     }
 
     #[test]
+    fn test_stash_direct() {
+        reset_state();
+        let payload = b"direct-stash-test-payload";
+        let ref_id = stash_put(payload).unwrap();
+        assert!(ref_id.starts_with("stash://ref-"));
+        
+        let retrieved = stash_get(&ref_id).unwrap();
+        assert_eq!(retrieved, payload.to_vec());
+        
+        let non_existent = stash_get("stash://ref-nonexistent");
+        assert!(non_existent.is_none());
+    }
+
+    #[test]
     fn test_fire_success() {
         reset_state();
         unsafe {
+            mock_state::STATE.with(|state| {
+                state.borrow_mut().stash.insert("ref-1".to_string(), b"legacy-vault-payload".to_vec());
+            });
+
             let arm_req = serde_json::json!({
                 "switchId": "test-switch",
                 "gracePeriod": 1000,
@@ -857,6 +1007,10 @@ mod tests {
             assert_eq!(res["success"], true);
             assert_eq!(res["status"], "fired");
             assert_eq!(res["decryptedKeys"], "secret-keys");
+            assert_eq!(res["retrievedFiles"][0]["ref"], "ref-1");
+            assert_eq!(res["retrievedFiles"][0]["size"], 20);
+            assert_eq!(res["retrievedFiles"][0]["status"], "retrieved");
+            assert!(res["releaseLogStashRef"].as_str().unwrap().starts_with("stash://ref-"));
         }
     }
 

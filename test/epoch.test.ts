@@ -4,6 +4,7 @@ import crypto from 'crypto';
 
 // Minimal mock database for testing
 let mockKv: Record<string, string> = {};
+let mockStash: Record<string, string> = {};
 let mockTime = Date.now();
 
 // Base32 Decode helper
@@ -99,7 +100,25 @@ describe('Epoch Enclave Contract Unit Tests', () => {
         ): number => {
           return writeStringToWasm(JSON.stringify({ signature: "mock-sig" }), vcBufPtr, vcBufLen);
         },
-        host_logging_log: (): void => {}
+        host_logging_log: (): void => {},
+        host_stash_put: (dataPtr: number, dataLen: number, refBufPtr: number, refBufLen: number): number => {
+          const memView = new Uint8Array(wasmMemory.buffer, dataPtr, dataLen);
+          const dataBase64 = Buffer.from(memView).toString('base64');
+          const refId = `ref-${Math.random().toString(36).substr(2, 9)}`;
+          const refStr = `stash://${refId}`;
+          mockStash[refStr] = dataBase64;
+          return writeStringToWasm(refStr, refBufPtr, refBufLen);
+        },
+        host_stash_get: (refPtr: number, refLen: number, dataBufPtr: number, dataBufLen: number): number => {
+          const refStr = readStringFromWasm(refPtr, refLen);
+          const dataBase64 = mockStash[refStr] || null;
+          if (dataBase64 === null) return -1;
+          const buffer = Buffer.from(dataBase64, 'base64');
+          const memView = new Uint8Array(wasmMemory.buffer, dataBufPtr, dataBufLen);
+          const writeLen = Math.min(buffer.length, dataBufLen);
+          memView.set(buffer.slice(0, writeLen));
+          return writeLen;
+        }
       }
     };
 
@@ -134,6 +153,7 @@ describe('Epoch Enclave Contract Unit Tests', () => {
 
   test('001: should successfully arm a new switch and vault', () => {
     mockKv = {};
+    mockStash = {};
     const res = runWasm('arm_switch', {
       switchId: 'test-switch-001',
       gracePeriod: 1209600000,

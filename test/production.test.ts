@@ -621,7 +621,7 @@ describe('Next.js API Route Handlers', () => {
         switchId: 'test-fire',
         gracePeriod: 10000,
         beneficiaries: ['friend@legacy-switch.org'],
-        stashRefs: ['stash-1'],
+        stashRefs: ['stash://ref-1'],
         encryptedKeys: '0x-keys',
         otpSecret: 'DAVID_SECRET_KEY'
       });
@@ -635,6 +635,10 @@ describe('Next.js API Route Handlers', () => {
       const data = await res.json();
       expect(data.success).toBe(true);
       expect(data.status).toBe('fired');
+      expect(data.retrievedFiles[0].ref).toBe('stash://ref-1');
+      expect(data.retrievedFiles[0].size).toBe(28);
+      expect(data.retrievedFiles[0].status).toBe('retrieved');
+      expect(data.releaseLogStashRef).toContain('stash://ref-');
     });
 
     it('should handle fire cascade with mockFailureStep present', async () => {
@@ -642,7 +646,7 @@ describe('Next.js API Route Handlers', () => {
         switchId: 'test-fire-fail',
         gracePeriod: 10000,
         beneficiaries: ['friend@legacy-switch.org'],
-        stashRefs: ['stash-1'],
+        stashRefs: ['stash://ref-1'],
         encryptedKeys: '0x-keys',
         otpSecret: 'DAVID_SECRET_KEY'
       });
@@ -653,6 +657,25 @@ describe('Next.js API Route Handlers', () => {
       const data = await res.json();
       expect(data.success).toBe(false);
       expect(data.reverted).toBe(true);
+    });
+
+    it('should handle missing stash reference gracefully in fire cascade', async () => {
+      await runWasmContract('arm_switch', {
+        switchId: 'test-fire-missing-stash',
+        gracePeriod: 10000,
+        beneficiaries: ['friend@legacy-switch.org'],
+        stashRefs: ['stash://ref-nonexistent'],
+        encryptedKeys: '0x-keys',
+        otpSecret: 'DAVID_SECRET_KEY'
+      });
+      await runWasmContract('check_trigger', { switchId: 'test-fire-missing-stash', clockOffset: 20000 });
+
+      const res = await callPostHandler(fireEpochPost, { switchId: 'test-fire-missing-stash' });
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.success).toBe(true);
+      expect(data.retrievedFiles[0].ref).toBe('stash://ref-nonexistent');
+      expect(data.retrievedFiles[0].status).toBe('not_found');
     });
 
     it('should return 400 if WASM fire returns error and not reverted', async () => {
@@ -955,6 +978,40 @@ describe('Next.js API Route Handlers', () => {
       const res = await callPostHandler(statusPost, { switchId: 'test' });
       expect(res.status).toBe(500);
       expect(await res.json()).toEqual({ error: 'Internal Server Error' });
+    });
+  });
+
+  describe('db.ts additional coverage', () => {
+    it('should handle getStash and setStash correctly', () => {
+      dbModule.setStash('stash://ref-test-coverage', 'dGVzdC1jb3ZlcmFnZS1kYXRh');
+      expect(dbModule.getStash('stash://ref-test-coverage')).toBe('dGVzdC1jb3ZlcmFnZS1kYXRh');
+      expect(dbModule.getStash('stash://ref-nonexistent')).toBeNull();
+    });
+
+    it('should handle readDb when stash property is missing', () => {
+      const dbPath = require('path').resolve(process.cwd(), 'data/db.json');
+      const originalDb = fs.readFileSync(dbPath, 'utf-8');
+      const parsed = JSON.parse(originalDb);
+      delete parsed.stash;
+      fs.writeFileSync(dbPath, JSON.stringify(parsed));
+      
+      const db = dbModule.readDb();
+      expect(db.stash).toEqual({});
+      
+      // Restore
+      fs.writeFileSync(dbPath, originalDb);
+    });
+
+    it('should handle readDb parse error', () => {
+      const dbPath = require('path').resolve(process.cwd(), 'data/db.json');
+      const originalDb = fs.readFileSync(dbPath, 'utf-8');
+      fs.writeFileSync(dbPath, 'invalid-json-{');
+      
+      const db = dbModule.readDb();
+      expect(db.stash).toEqual({});
+      
+      // Restore
+      fs.writeFileSync(dbPath, originalDb);
     });
   });
 });
