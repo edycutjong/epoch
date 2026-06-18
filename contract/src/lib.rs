@@ -9,11 +9,9 @@ extern "C" {
     fn host_kv_store_get(key_ptr: *const u8, key_len: usize, val_buf_ptr: *mut u8, val_buf_len: usize) -> i32;
     fn host_kv_store_set(key_ptr: *const u8, key_len: usize, val_ptr: *const u8, val_len: usize) -> i32;
     fn host_clock_now() -> u64;
-    fn host_http_with_placeholders_post(
-        url_ptr: *const u8, url_len: usize,
-        body_ptr: *const u8, body_len: usize,
-        res_buf_ptr: *mut u8, res_buf_len: usize
-    ) -> i32;
+    // NOTE: the Switch Coordinator no longer performs egress directly — the
+    // privacy-blind http-with-placeholders dispatch is delegated to the Egress
+    // Dispatcher contract via `host_contracts_call` (see fire_epoch).
     fn host_signing_issue_vc(
         subject_ptr: *const u8, subject_len: usize,
         claims_ptr: *const u8, claims_len: usize,
@@ -27,6 +25,19 @@ extern "C" {
     fn host_stash_get(
         ref_ptr: *const u8, ref_len: usize,
         data_buf_ptr: *mut u8, data_buf_len: usize
+    ) -> i32;
+    // Synchronous TEE cross-contract call: invoke another enclave contract
+    // (the Egress Dispatcher) and receive its JSON result in a single tx.
+    fn host_contracts_call(
+        contract_ptr: *const u8, contract_len: usize,
+        fn_ptr: *const u8, fn_len: usize,
+        payload_ptr: *const u8, payload_len: usize,
+        res_buf_ptr: *mut u8, res_buf_len: usize
+    ) -> i32;
+    // Durable, at-least-once outbox enqueue keyed by an idempotency key (idk).
+    fn host_outbox_enqueue(
+        idk_ptr: *const u8, idk_len: usize,
+        payload_ptr: *const u8, payload_len: usize
     ) -> i32;
 }
 
@@ -147,6 +158,33 @@ fn stash_get(reference: &str) -> Option<Vec<u8>> {
     } else {
         None
     }
+}
+
+// Invoke a sibling enclave contract synchronously within the same TEE tx.
+fn contracts_call(contract: &str, function: &str, payload: &str) -> Option<String> {
+    let mut buf = vec![0u8; 8192];
+    let res = unsafe {
+        host_contracts_call(
+            contract.as_ptr(), contract.len(),
+            function.as_ptr(), function.len(),
+            payload.as_ptr(), payload.len(),
+            buf.as_mut_ptr(), buf.len()
+        )
+    };
+    if res >= 0 {
+        buf.truncate(res as usize);
+        String::from_utf8(buf).ok()
+    } else {
+        None
+    }
+}
+
+// Durably enqueue an event for at-least-once downstream delivery.
+fn outbox_enqueue(idk: &str, payload: &str) -> bool {
+    let res = unsafe {
+        host_outbox_enqueue(idk.as_ptr(), idk.len(), payload.as_ptr(), payload.len())
+    };
+    res == 0
 }
 
 // Struct Definitions
@@ -446,64 +484,54 @@ pub unsafe extern "C" fn fire_epoch(ptr: *const u8, len: usize) -> u64 {
         }
     }
     
-    // Simulate Atomic Cascade Steps
-    // Step 1: Egress http-with-placeholders
-    let mut step_results = Vec::new();
-    
-    for (idx, beneficiary) in switch_state.beneficiaries.iter().enumerate() {
-        let step_num = (idx + 1) as u32;
-        
-        // Mock failure check for rollback demo
-        if let Some(fail_step) = req.mock_failure_step {
-            if fail_step == step_num {
-                log(&format!("Simulated failure triggered on step {}", step_num));
-                
-                // Rollback: Keep switch status as "expired", files remain sealed
-                // (no state changes saved as "fired", metadata intact)
-                let rollback_res = serde_json::json!({
-                    "success": false,
-                    "error": "ROLLBACK TRIGGERED: Downstream target failed.",
-                    "failedStep": step_num,
-                    "reverted": true,
-                    "switchStatus": "expired"
-                });
-                return return_string(rollback_res.to_string());
-            }
-        }
-        
-        // Real egress mock using host http-with-placeholders post
-        let url = "https://beneficiary.sandbox.test/notify";
-        let body = serde_json::json!({
-            "recipient": beneficiary,
-            "legacy_hash": "0x3b18cf983bd7088998aa90c8b323c6f14028bc"
-        }).to_string();
-        
-        let mut res_buf = vec![0u8; 1024];
-        let http_res = host_http_with_placeholders_post(
-            url.as_ptr(), url.len(),
-            body.as_ptr(), body.len(),
-            res_buf.as_mut_ptr(), res_buf.len()
-        );
-        
-        if http_res < 0 {
-            log(&format!("HTTP placeholder egress failed for {}", beneficiary));
+    // ── Atomic blind-egress sub-transaction via contracts-call ──
+    // The Switch Coordinator delegates the actual PII-blind egress to the Egress
+    // Dispatcher ("Blind Courier") contract through a synchronous TEE cross-contract
+    // call. The whole cascade is atomic: if the Courier reports ANY failed delivery,
+    // we abort here WITHOUT marking the switch fired, issuing a VC, or enqueuing to
+    // the durable outbox — so the vault keys stay sealed.
+    let dispatch_payload = serde_json::json!({
+        "beneficiaries": switch_state.beneficiaries,
+        "legacyHash": "0x3b18cf983bd7088998aa90c8b323c6f14028bc",
+        "mockFailureStep": req.mock_failure_step
+    }).to_string();
+
+    let courier_raw = match contracts_call("epoch-executor", "execute_dispatch", &dispatch_payload) {
+        Some(r) => r,
+        None => {
+            log("contracts-call to Egress Dispatcher failed at host boundary");
             let rollback_res = serde_json::json!({
                 "success": false,
-                "error": format!("ROLLBACK TRIGGERED: HTTP target failed for {}", beneficiary),
-                "failedStep": step_num,
+                "error": "ROLLBACK TRIGGERED: cross-contract egress dispatch unreachable.",
                 "reverted": true,
                 "switchStatus": "expired"
             });
             return return_string(rollback_res.to_string());
         }
-        
-        step_results.push(serde_json::json!({
-            "target": beneficiary,
-            "status": "delivered"
-        }));
+    };
+
+    let courier: serde_json::Value = serde_json::from_str(&courier_raw)
+        .unwrap_or_else(|_| serde_json::json!({ "success": false, "error": "malformed courier response" }));
+
+    if courier["success"] != serde_json::Value::Bool(true) {
+        // Atomic abort: the Courier failed → revert. Switch stays "expired".
+        let failed_step = courier.get("failedStep").cloned().unwrap_or(serde_json::Value::Null);
+        let inner_err = courier.get("error").and_then(|e| e.as_str()).unwrap_or("downstream target failed");
+        log(&format!("Egress Dispatcher reported failure — rolling back: {}", inner_err));
+        let rollback_res = serde_json::json!({
+            "success": false,
+            "error": format!("ROLLBACK TRIGGERED: {}", inner_err),
+            "failedStep": failed_step,
+            "reverted": true,
+            "switchStatus": "expired"
+        });
+        return return_string(rollback_res.to_string());
     }
-    
-    // If all step results passed, generate signed VC receipt
+
+    // Delivered set returned by the Egress Dispatcher contract.
+    let step_results = courier.get("delivered").cloned().unwrap_or_else(|| serde_json::json!([]));
+
+    // If the cross-contract dispatch succeeded, generate signed VC receipt
     let subject = format!("did:t3n:{}", switch_state.id);
     let claims = serde_json::json!({
         "switchId": switch_state.id,
@@ -546,11 +574,23 @@ pub unsafe extern "C" fn fire_epoch(ptr: *const u8, len: usize) -> u64 {
         }
     };
     
+    // Durably enqueue the release event so downstream auditors are notified
+    // exactly-once even across host restarts (idempotency key = switch + firedAt).
+    let outbox_idk = format!("epoch-release-{}-{}", switch_state.id, get_now());
+    let outbox_payload = serde_json::json!({
+        "event": "legacy.released",
+        "switchId": switch_state.id,
+        "beneficiaryCount": switch_state.beneficiaries.len(),
+        "releaseLogStashRef": release_log_ref
+    }).to_string();
+    let outbox_enqueued = outbox_enqueue(&outbox_idk, &outbox_payload);
+    log(&format!("Outbox enqueue (idk={}) durable={}", outbox_idk, outbox_enqueued));
+
     // Save state as fired
     switch_state.status = "fired".to_string();
     let updated_json = serde_json::to_string(&switch_state).unwrap();
     kv_set(&switch_key, &updated_json);
-    
+
     let response = serde_json::json!({
         "success": true,
         "switchId": switch_state.id,
@@ -559,9 +599,10 @@ pub unsafe extern "C" fn fire_epoch(ptr: *const u8, len: usize) -> u64 {
         "vcReceipt": vc_receipt,
         "decryptedKeys": vault_state.encrypted_keys,
         "retrievedFiles": retrieved_files,
-        "releaseLogStashRef": release_log_ref
+        "releaseLogStashRef": release_log_ref,
+        "outboxEnqueued": outbox_enqueued
     });
-    
+
     return_string(response.to_string())
 }
 
@@ -643,6 +684,7 @@ mod mock_state {
         pub now: u64,
         pub http_fail: bool,
         pub vc_fail: bool,
+        pub outbox_count: u32,
     }
 
     thread_local! {
@@ -652,6 +694,7 @@ mod mock_state {
             now: 1729600000000,
             http_fail: false,
             vc_fail: false,
+            outbox_count: 0,
         });
     }
 }
@@ -694,27 +737,6 @@ pub unsafe extern "C" fn host_kv_store_set(key_ptr: *const u8, key_len: usize, v
 #[no_mangle]
 pub unsafe extern "C" fn host_clock_now() -> u64 {
     mock_state::STATE.with(|state| state.borrow().now)
-}
-
-#[cfg(test)]
-#[no_mangle]
-pub unsafe extern "C" fn host_http_with_placeholders_post(
-    _url_ptr: *const u8, _url_len: usize,
-    _body_ptr: *const u8, _body_len: usize,
-    res_buf_ptr: *mut u8, res_buf_len: usize
-) -> i32 {
-    let http_fail = mock_state::STATE.with(|state| state.borrow().http_fail);
-    if http_fail {
-        -1
-    } else {
-        let response = r#"{"status":"delivered"}"#.as_bytes();
-        if response.len() <= res_buf_len {
-            std::ptr::copy_nonoverlapping(response.as_ptr(), res_buf_ptr, response.len());
-            response.len() as i32
-        } else {
-            -1
-        }
-    }
 }
 
 #[cfg(test)]
@@ -794,6 +816,70 @@ pub unsafe extern "C" fn host_stash_get(
     })
 }
 
+// Mock the synchronous cross-contract call by emulating the Egress Dispatcher's
+// execute_dispatch logic against the shared mock host state.
+#[cfg(test)]
+#[no_mangle]
+pub unsafe extern "C" fn host_contracts_call(
+    _contract_ptr: *const u8, _contract_len: usize,
+    _fn_ptr: *const u8, _fn_len: usize,
+    payload_ptr: *const u8, payload_len: usize,
+    res_buf_ptr: *mut u8, res_buf_len: usize
+) -> i32 {
+    let payload_slice = std::slice::from_raw_parts(payload_ptr, payload_len);
+    let payload = std::str::from_utf8(payload_slice).unwrap();
+    let parsed: serde_json::Value = serde_json::from_str(payload).unwrap_or(serde_json::json!({}));
+    let beneficiaries = parsed["beneficiaries"].as_array().cloned().unwrap_or_default();
+    let mock_failure_step = parsed["mockFailureStep"].as_u64();
+    let http_fail = mock_state::STATE.with(|s| s.borrow().http_fail);
+
+    let mut delivered: Vec<serde_json::Value> = Vec::new();
+    let mut out = serde_json::json!({ "success": true, "egressCount": 0, "delivered": [] });
+    let mut failed = false;
+
+    for (idx, b) in beneficiaries.iter().enumerate() {
+        let step = (idx + 1) as u64;
+        if http_fail || mock_failure_step == Some(step) {
+            out = serde_json::json!({
+                "success": false,
+                "error": "Downstream beneficiary target rejected delivery.",
+                "failedStep": step,
+                "delivered": delivered
+            });
+            failed = true;
+            break;
+        }
+        delivered.push(serde_json::json!({ "target": b, "status": "delivered" }));
+    }
+
+    if !failed {
+        out = serde_json::json!({
+            "success": true,
+            "egressCount": delivered.len(),
+            "delivered": delivered
+        });
+    }
+
+    let s = out.to_string();
+    let bytes = s.as_bytes();
+    if bytes.len() <= res_buf_len {
+        std::ptr::copy_nonoverlapping(bytes.as_ptr(), res_buf_ptr, bytes.len());
+        bytes.len() as i32
+    } else {
+        -1
+    }
+}
+
+#[cfg(test)]
+#[no_mangle]
+pub unsafe extern "C" fn host_outbox_enqueue(
+    _idk_ptr: *const u8, _idk_len: usize,
+    _payload_ptr: *const u8, _payload_len: usize
+) -> i32 {
+    mock_state::STATE.with(|s| s.borrow_mut().outbox_count += 1);
+    0
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -806,6 +892,7 @@ mod tests {
             s.now = 1729600000000;
             s.http_fail = false;
             s.vc_fail = false;
+            s.outbox_count = 0;
         });
         LAST_RETURNED_STRING.with(|cell| {
             *cell.borrow_mut() = String::new();
@@ -1011,6 +1098,47 @@ mod tests {
             assert_eq!(res["retrievedFiles"][0]["size"], 20);
             assert_eq!(res["retrievedFiles"][0]["status"], "retrieved");
             assert!(res["releaseLogStashRef"].as_str().unwrap().starts_with("stash://ref-"));
+            // Egress was performed via the cross-contract dispatcher.
+            assert_eq!(res["stepsExecuted"][0]["status"], "delivered");
+            // Release event was durably enqueued to the outbox exactly once.
+            assert_eq!(res["outboxEnqueued"], true);
+            let outbox_count = mock_state::STATE.with(|s| s.borrow().outbox_count);
+            assert_eq!(outbox_count, 1);
+        }
+    }
+
+    #[test]
+    fn test_fire_rollback_skips_outbox() {
+        reset_state();
+        unsafe {
+            let arm_req = serde_json::json!({
+                "switchId": "test-switch",
+                "gracePeriod": 1000,
+                "beneficiaries": ["alice@test.org"],
+                "stashRefs": ["ref-1"],
+                "encryptedKeys": "secret-keys",
+                "otpSecret": "NBSWY3DPEB3W64TBNQ======"
+            });
+            run_arm_switch(&arm_req);
+
+            let trigger_req = serde_json::json!({ "switchId": "test-switch", "clockOffset": 1500 });
+            run_check_trigger(&trigger_req);
+
+            // Force the cross-contract dispatch to fail on the first beneficiary.
+            let fire_req = serde_json::json!({ "switchId": "test-switch", "mockFailureStep": 1 });
+            let res = run_fire_epoch(&fire_req);
+            assert_eq!(res["success"], false);
+            assert_eq!(res["reverted"], true);
+            assert_eq!(res["failedStep"], 1);
+
+            // Atomicity: no durable outbox enqueue happened on rollback.
+            let outbox_count = mock_state::STATE.with(|s| s.borrow().outbox_count);
+            assert_eq!(outbox_count, 0);
+
+            // Switch was NOT marked fired — keys stay sealed.
+            let switch_json = mock_state::STATE.with(|s| s.borrow().kv.get("epoch:switch:test-switch").cloned().unwrap());
+            let state: SwitchState = serde_json::from_str(&switch_json).unwrap();
+            assert_eq!(state.status, "expired");
         }
     }
 
