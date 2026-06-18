@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Play, ShieldAlert, Award, FileCheck, Check, X, RefreshCw } from 'lucide-react';
+import { verifyVc } from '@/lib/vcVerifier';
 
 interface CascadeTimelineProps {
   status: string;
@@ -16,8 +17,8 @@ export default function CascadeTimeline({
   triggerResult,
   onTriggerLegacy,
 }: CascadeTimelineProps) {
-  const [isVerifyingVc, setIsVerifyingVc] = useState(false);
-  const [vcVerifiedStatus, setVcVerifiedStatus] = useState<'idle' | 'verifying' | 'success'>('idle');
+  const [vcVerifiedStatus, setVcVerifiedStatus] = useState<'idle' | 'verifying' | 'success' | 'failed'>('idle');
+  const [vcError, setVcError] = useState<string | null>(null);
 
   const isExpired = status === 'expired';
   const isFired = status === 'fired';
@@ -27,9 +28,26 @@ export default function CascadeTimeline({
 
   const handleVerifyVc = () => {
     setVcVerifiedStatus('verifying');
+    setVcError(null);
     setTimeout(() => {
-      setVcVerifiedStatus('success');
-    }, 1500);
+      try {
+        if (!triggerResult || !triggerResult.vcReceipt) {
+          throw new Error('No VC receipt available for verification');
+        }
+        const parsed = JSON.parse(triggerResult.vcReceipt);
+        const jwt = parsed.credential;
+        const result = verifyVc(jwt);
+        if (result.success) {
+          setVcVerifiedStatus('success');
+        } else {
+          setVcVerifiedStatus('failed');
+          setVcError(result.error || 'Verification failed');
+        }
+      } catch (e: any) {
+        setVcVerifiedStatus('failed');
+        setVcError(e.message || 'Malformed credential JSON');
+      }
+    }, 1200);
   };
 
   return (
@@ -186,6 +204,11 @@ export default function CascadeTimeline({
                   <Check className="w-3 h-3" strokeWidth={3} />
                   <span>VERIFIED</span>
                 </div>
+              ) : vcVerifiedStatus === 'failed' ? (
+                <div className="flex items-center gap-1 font-mono text-[9px] bg-red-500 text-white px-2 py-0.5 rounded font-bold animate-pulse">
+                  <X className="w-3 h-3" strokeWidth={3} />
+                  <span>VERIFICATION FAILED</span>
+                </div>
               ) : (
                 <button
                   onClick={handleVerifyVc}
@@ -206,6 +229,12 @@ export default function CascadeTimeline({
                 }
               })()}
             </pre>
+
+            {vcVerifiedStatus === 'failed' && vcError && (
+              <div className="mt-2 text-red-400 font-mono text-[10px] leading-relaxed">
+                Verification Error: {vcError}
+              </div>
+            )}
             
             <div className="mt-2 flex gap-1.5 items-center font-mono text-[9px] text-slate-500">
               <FileCheck className="w-3.5 h-3.5 text-green-500" />

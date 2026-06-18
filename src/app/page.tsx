@@ -9,10 +9,7 @@ import LegacyVault from '@/components/LegacyVault';
 import TimeWarpPanel from '@/components/TimeWarpPanel';
 import CascadeTimeline from '@/components/CascadeTimeline';
 
-const INITIAL_VAULT_FILES = [
-  { name: 'banking_passwords.txt.enc', size: '4.8 KB', type: 'Encrypted Text', fingerprint: 'sha256:3de3...2027' },
-  { name: 'arbitrum_escrow_private_key.pem', size: '1.6 KB', type: 'Key File', fingerprint: 'sha256:d38f...9e94' }
-];
+const INITIAL_VAULT_FILES: any[] = [];
 
 const ACTIVE_DID = process.env.NEXT_PUBLIC_T3N_DID || 'did:t3n:david123';
 
@@ -91,6 +88,13 @@ export default function Dashboard() {
         setTimeLeft(data.timeLeft);
         setGracePeriod(data.gracePeriod);
         setDebugOtp(data.debugOtp || '000000');
+        if (data.status === 'fired') {
+          if (data.decryptedKeys) {
+            setDecryptedKeys(data.decryptedKeys);
+          }
+        } else {
+          setDecryptedKeys('');
+        }
       }
     } catch (e) {
       console.error('Failed to fetch status:', e);
@@ -403,6 +407,7 @@ export default function Dashboard() {
           />
 
           <TimeWarpPanel
+            status={status}
             clockOffsetDays={clockOffsetDays}
             mockFailureStep={mockFailureStep}
             isResetting={isResetting}

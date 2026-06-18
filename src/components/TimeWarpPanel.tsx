@@ -4,6 +4,7 @@ import React from 'react';
 import { Sliders, RefreshCw, AlertCircle, HelpCircle } from 'lucide-react';
 
 interface TimeWarpPanelProps {
+  status: string;
   clockOffsetDays: number;
   mockFailureStep: number;
   isResetting: boolean;
@@ -14,6 +15,7 @@ interface TimeWarpPanelProps {
 }
 
 export default function TimeWarpPanel({
+  status,
   clockOffsetDays,
   mockFailureStep,
   isResetting,
@@ -22,6 +24,7 @@ export default function TimeWarpPanel({
   onResetDatabase,
   onTriggerCheck,
 }: TimeWarpPanelProps) {
+  const isFired = status === 'fired';
   return (
     <div className="flex flex-col p-8 rounded-2xl border border-[#ffaa00]/20 bg-black/40 backdrop-blur-xl shadow-lg relative overflow-hidden h-full">
       {/* Background highlight */}
@@ -55,7 +58,8 @@ export default function TimeWarpPanel({
           step="1"
           value={clockOffsetDays}
           onChange={(e) => onOffsetChange(parseInt(e.target.value))}
-          className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[#ffaa00] focus:outline-none"
+          disabled={isFired}
+          className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[#ffaa00] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
         />
         <div className="flex justify-between font-mono text-[9px] text-slate-500 mt-2 px-1">
           <span>Realtime (0d)</span>
@@ -93,7 +97,8 @@ export default function TimeWarpPanel({
       <div className="mt-auto flex flex-col gap-3">
         <button
           onClick={onTriggerCheck}
-          className="w-full py-2.5 px-4 rounded-xl border border-[#00f0ff]/30 hover:border-[#00f0ff] font-mono text-xs font-semibold text-[#00f0ff] bg-[#00f0ff]/5 hover:bg-[#00f0ff]/10 active:scale-[0.98] transition-all"
+          disabled={isFired}
+          className="w-full py-2.5 px-4 rounded-xl border border-[#00f0ff]/30 hover:border-[#00f0ff] font-mono text-xs font-semibold text-[#00f0ff] bg-[#00f0ff]/5 hover:bg-[#00f0ff]/10 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           FORCE TRIGGER EVALUATION
         </button>

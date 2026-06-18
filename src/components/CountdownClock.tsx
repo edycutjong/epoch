@@ -112,7 +112,7 @@ export default function CountdownClock({
 
       {/* Circular Timer Display */}
       <div className="relative w-64 h-64 flex items-center justify-center mb-6 z-10">
-        <svg className="absolute w-full h-full transform -rotate-90">
+        <svg className="absolute w-full h-full transform -rotate-90" viewBox="0 0 256 256" width="256" height="256">
           {/* Base track */}
           <circle cx="128" cy="128" r="80" stroke="rgba(255,255,255,0.03)" strokeWidth="6" fill="transparent" />
           {/* Progress circle */}
@@ -208,7 +208,7 @@ export default function CountdownClock({
       )}
 
       {/* CTA Button */}
-      {status === 'active' && (
+      {(status === 'active' || status === 'expired') && (
         <button
           onClick={() => {
             setIsModalOpen(true);
