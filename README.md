@@ -16,8 +16,10 @@
 
   ![Next.js](https://img.shields.io/badge/Next.js_16-black?style=flat&logo=next.js)
   ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
-  ![Rust](https://img.shields.io/badge/Rust_Wasm-black?style=flat&logo=rust&logoColor=white)
-  ![Tailwind](https://img.shields.io/badge/Tailwind_v3-38B2AC?style=flat&logo=tailwindcss&logoColor=white)
+  ![Rust WASM](https://img.shields.io/badge/Rust_WASM-de782f?style=flat&logo=rust&logoColor=white)
+  ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat&logo=tailwindcss&logoColor=white)
+  ![Intel TDX](https://img.shields.io/badge/Intel_TDX-0071c5?style=flat&logo=intel&logoColor=white)
+  ![T3 ADK](https://img.shields.io/badge/T3_ADK-8b5cf6?style=flat)
   [![CI](https://github.com/edycutjong/epoch/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/epoch/actions/workflows/ci.yml)
 
 </div>
