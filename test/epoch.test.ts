@@ -118,7 +118,19 @@ describe('Epoch Enclave Contract Unit Tests', () => {
           const writeLen = Math.min(buffer.length, dataBufLen);
           memView.set(buffer.slice(0, writeLen));
           return writeLen;
-        }
+        },
+        // Cross-contract dispatch stub: this suite only exercises arm/heartbeat/
+        // check_trigger, but the Coordinator declares these imports so they must
+        // be linked. The Egress Dispatcher is covered in production.test.ts.
+        host_contracts_call: (
+          _contractPtr: number, _contractLen: number,
+          _fnPtr: number, _fnLen: number,
+          _payloadPtr: number, _payloadLen: number,
+          resBufPtr: number, resBufLen: number
+        ): number => {
+          return writeStringToWasm(JSON.stringify({ success: true, egressCount: 0, delivered: [] }), resBufPtr, resBufLen);
+        },
+        host_outbox_enqueue: (): number => 0
       }
     };
 

@@ -458,6 +458,75 @@ describe('wasmRunner.ts tests', () => {
       deallocWasmMem(claimsObj.ptr, claimsObj.len);
       deallocWasmMem(resBuf.ptr, resBuf.len);
     });
+
+    it('host_contracts_call should synchronously invoke the Egress Dispatcher executor contract', () => {
+      const contractObj = writeToWasmMem('epoch-executor');
+      const fnObj = writeToWasmMem('execute_dispatch');
+      const payloadObj = writeToWasmMem(JSON.stringify({
+        beneficiaries: ['{{profile.verified_contacts.email.value}}', 'heir2@legacy-switch.org'],
+        legacyHash: '0xabc'
+      }));
+      const resBuf = writeToWasmMem(' '.repeat(4096));
+
+      const len = capturedEnv.host_contracts_call(
+        contractObj.ptr, contractObj.len,
+        fnObj.ptr, fnObj.len,
+        payloadObj.ptr, payloadObj.len,
+        resBuf.ptr, resBuf.len
+      );
+      expect(len).toBeGreaterThan(0);
+
+      const result = JSON.parse(readStringFromWasm(resBuf.ptr, len));
+      expect(result.success).toBe(true);
+      expect(result.egressCount).toBe(2);
+      expect(result.delivered[0].status).toBe('delivered');
+
+      // The cross-contract egress actually dispatched through http-with-placeholders.
+      const notifications = readDb().dispatchedNotifications;
+      expect(notifications.length).toBe(2);
+
+      deallocWasmMem(contractObj.ptr, contractObj.len);
+      deallocWasmMem(fnObj.ptr, fnObj.len);
+      deallocWasmMem(payloadObj.ptr, payloadObj.len);
+      deallocWasmMem(resBuf.ptr, resBuf.len);
+    });
+
+    it('host_contracts_call should return -1 if the executor lacks the requested function', () => {
+      const contractObj = writeToWasmMem('epoch-executor');
+      const fnObj = writeToWasmMem('nonexistent_fn');
+      const payloadObj = writeToWasmMem('{}');
+      const resBuf = writeToWasmMem(' '.repeat(256));
+
+      const len = capturedEnv.host_contracts_call(
+        contractObj.ptr, contractObj.len,
+        fnObj.ptr, fnObj.len,
+        payloadObj.ptr, payloadObj.len,
+        resBuf.ptr, resBuf.len
+      );
+      expect(len).toBe(-1);
+
+      deallocWasmMem(contractObj.ptr, contractObj.len);
+      deallocWasmMem(fnObj.ptr, fnObj.len);
+      deallocWasmMem(payloadObj.ptr, payloadObj.len);
+      deallocWasmMem(resBuf.ptr, resBuf.len);
+    });
+
+    it('host_outbox_enqueue should durably enqueue and dedupe on idempotency key', () => {
+      const idkObj = writeToWasmMem('epoch-release-test-123');
+      const payloadObj = writeToWasmMem(JSON.stringify({ event: 'legacy.released', switchId: 'test' }));
+
+      const r1 = capturedEnv.host_outbox_enqueue(idkObj.ptr, idkObj.len, payloadObj.ptr, payloadObj.len);
+      expect(r1).toBe(0);
+      expect(readDb().outbox!.length).toBe(1);
+
+      // Re-enqueue with the same idk: at-least-once delivery with idempotent dedupe.
+      const r2 = capturedEnv.host_outbox_enqueue(idkObj.ptr, idkObj.len, payloadObj.ptr, payloadObj.len);
+      expect(r2).toBe(0);
+      expect(readDb().outbox!.length).toBe(1);
+
+      deallocWasmMem(idkObj.ptr, idkObj.len);
+      deallocWasmMem(payloadObj.ptr, payloadObj.len);
+    });
   });
 });
 
@@ -639,6 +708,10 @@ describe('Next.js API Route Handlers', () => {
       expect(data.retrievedFiles[0].size).toBe(28);
       expect(data.retrievedFiles[0].status).toBe('retrieved');
       expect(data.releaseLogStashRef).toContain('stash://ref-');
+      // Egress ran via the cross-contract dispatcher and the release was durably enqueued.
+      expect(data.stepsExecuted[0].status).toBe('delivered');
+      expect(data.outboxEnqueued).toBe(true);
+      expect(readDb().outbox!.length).toBeGreaterThan(0);
     });
 
     it('should handle fire cascade with mockFailureStep present', async () => {
