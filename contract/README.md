@@ -1,6 +1,8 @@
-# Epoch TEE Enclave WASM Contract ⏳
+# Epoch TEE Enclave WASM Contract ⏳ — Switch Coordinator
 
-This directory contains the source code for the Rust-based WASM component contract that executes inside the **Intel TDX Hardware Enclave** (TEE). It represents the isolated custodian boundary of the Dead-Man's Switch.
+This directory contains the **Switch Coordinator** ("The Custodian"), the primary Rust→WASM contract that executes inside the **Intel TDX Hardware Enclave** (TEE). It represents the isolated custodian boundary of the Dead-Man's Switch.
+
+> **Two-contract system.** The Coordinator never performs egress itself. On `fire_epoch` it synchronously invokes the **Egress Dispatcher** (the "Blind Courier", in [`../contract-executor`](../contract-executor)) via `host_contracts_call`, and only commits the release (VC + outbox + `fired` status) if that cross-contract call reports full success. See [`../contract-executor/src/lib.rs`](../contract-executor/src/lib.rs).
 
 ---
 
@@ -25,11 +27,18 @@ extern "C" {
     fn host_kv_store_get(key_ptr: *const u8, key_len: usize, val_buf_ptr: *mut u8, val_buf_len: usize) -> i32;
     fn host_kv_store_set(key_ptr: *const u8, key_len: usize, val_ptr: *const u8, val_len: usize) -> i32;
     fn host_clock_now() -> u64;
-    fn host_http_with_placeholders_post(url_ptr: *const u8, url_len: usize, body_ptr: *const u8, body_len: usize, res_buf_ptr: *mut u8, res_buf_len: usize) -> i32;
     fn host_signing_issue_vc(subject_ptr: *const u8, subject_len: usize, claims_ptr: *const u8, claims_len: usize, vc_buf_ptr: *mut u8, vc_buf_len: usize) -> i32;
     fn host_logging_log(msg_ptr: *const u8, msg_len: usize);
+    fn host_stash_put(data_ptr: *const u8, data_len: usize, ref_buf_ptr: *mut u8, ref_buf_len: usize) -> i32;
+    fn host_stash_get(ref_ptr: *const u8, ref_len: usize, data_buf_ptr: *mut u8, data_buf_len: usize) -> i32;
+    // Synchronous TEE cross-contract call into the Egress Dispatcher.
+    fn host_contracts_call(contract_ptr: *const u8, contract_len: usize, fn_ptr: *const u8, fn_len: usize, payload_ptr: *const u8, payload_len: usize, res_buf_ptr: *mut u8, res_buf_len: usize) -> i32;
+    // Durable, at-least-once outbox enqueue keyed by an idempotency key (idk).
+    fn host_outbox_enqueue(idk_ptr: *const u8, idk_len: usize, payload_ptr: *const u8, payload_len: usize) -> i32;
 }
 ```
+
+> `http-with-placeholders` is **not** imported here — egress is owned by the Egress Dispatcher contract, which the Coordinator reaches through `host_contracts_call`.
 
 ---
 

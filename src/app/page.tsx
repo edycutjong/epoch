@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Shield, ShieldAlert, Cpu, Heart, CheckCircle, HelpCircle, ArrowRight, Github, ExternalLink, Activity, Sparkles, RefreshCcw } from 'lucide-react';
+import { Shield, ShieldAlert, Cpu, Heart, CheckCircle, HelpCircle, ArrowRight, Github, ExternalLink, Activity, Sparkles, RefreshCcw, Info, Coins, Newspaper, Landmark } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 import CountdownClock from '@/components/CountdownClock';
@@ -62,12 +62,15 @@ export default function Dashboard() {
   // FAQ accordion active state
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
 
-  // Telemetry status
+  // Telemetry status (populated from /api/integrations/verify — values are
+  // measured/derived, not hardcoded; see the route for the simulation note)
   const [telemetry, setTelemetry] = useState<any>({
     enclaveStatus: "online",
     hardwareIsolation: "Intel TDX",
-    clockDriftMs: 8.42,
-    metrics: { activeSwitches: 1, expiredSwitches: 0, firedSwitches: 0, dispatchedNotifications: 0 }
+    clockSource: "host wall-clock (sandbox)",
+    clockDriftMs: null,
+    metrics: { activeSwitches: 0, expiredSwitches: 0, firedSwitches: 0, dispatchedNotifications: 0, outboxQueued: 0 },
+    attestation: { mode: "sandbox-simulation", enclaveMeasurement: "" }
   });
 
   // Dispatched Notifications history
@@ -316,7 +319,10 @@ export default function Dashboard() {
 
           {/* Attestation Telemetry Badge */}
           <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-lg border border-green-500/20 bg-green-500/5 font-mono text-[10px] text-green-400">
+            <div
+              className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-lg border border-green-500/20 bg-green-500/5 font-mono text-[10px] text-green-400"
+              title={telemetry.attestation?.enclaveMeasurement ? `Enclave measurement ${telemetry.attestation.enclaveMeasurement}` : undefined}
+            >
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]" />
               <span>INTEL TDX HARNESS OK</span>
             </div>
@@ -376,12 +382,14 @@ export default function Dashboard() {
             </span>
           </div>
           <div className="flex flex-col gap-1 items-center border-r border-white/5 last:border-0 hover:text-white transition-colors">
-            <span className="text-slate-500 text-[10px]">CLOCK DRIFT RATE</span>
-            <span className="font-bold text-[#00f0ff] text-sm mt-0.5">&lt; 50ms / Week</span>
+            <span className="text-slate-500 text-[10px]">HOST TIMER JITTER</span>
+            <span className="font-bold text-[#00f0ff] text-sm mt-0.5" title="Measured live by /api/integrations/verify — production uses a monotonic TDX clock">
+              {telemetry.clockDriftMs != null ? `${telemetry.clockDriftMs} ms` : '—'}
+            </span>
           </div>
           <div className="flex flex-col gap-1 items-center border-r border-white/5 last:border-0 hover:text-white transition-colors">
             <span className="text-slate-500 text-[10px]">DISCLOSURE RISK</span>
-            <span className="font-bold text-green-500 text-sm mt-0.5">0 Leak Rollback</span>
+            <span className="font-bold text-green-500 text-sm mt-0.5">Atomic 0-Leak Rollback</span>
           </div>
           <div className="flex flex-col gap-1 items-center last:border-0 hover:text-white transition-colors">
             <span className="text-slate-500 text-[10px]">DID AUTHENTICATOR</span>
@@ -440,11 +448,23 @@ export default function Dashboard() {
       {/* Product Demo Media: Dispatched Notifications Timeline (Element 6) */}
       <section className="max-w-7xl mx-auto px-6 mt-16 z-10 relative w-full">
         <div className="p-8 rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl">
-          <h3 className="font-mono text-sm font-bold text-white mb-6 uppercase flex items-center gap-2">
-            <Activity className="w-4 h-4 text-[#00f0ff] animate-pulse" />
-            LIVE EGRESS TELEMETRY LOGS (http-with-placeholders)
-          </h3>
-          
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+            <h3 className="font-mono text-sm font-bold text-white uppercase flex items-center gap-2">
+              <Activity className="w-4 h-4 text-[#00f0ff] animate-pulse" />
+              LIVE EGRESS TELEMETRY LOGS (http-with-placeholders)
+            </h3>
+            {telemetry.attestation?.enclaveMeasurement && (
+              <span
+                className="font-mono text-[10px] text-slate-500 truncate max-w-full"
+                title="Real SHA-256 of the compiled WASM contracts — reproduce with: shasum -a 256 src/lib/*.wasm"
+              >
+                <span className="text-slate-600">enclave </span>
+                <span className="text-[#00f0ff]">{telemetry.attestation.enclaveMeasurement.slice(0, 21)}…</span>
+                <span className="text-slate-600"> · outbox {telemetry.metrics?.outboxQueued ?? 0}</span>
+              </span>
+            )}
+          </div>
+
           {notifications.length === 0 ? (
             <div className="p-8 text-center border border-dashed border-white/10 rounded-xl font-mono text-xs text-slate-500">
               No notifications dispatched yet. Warp time past 14 days and click "Trigger Atomic Cascade" to execute.
@@ -577,36 +597,44 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Customer Testimonials (Element 8) */}
+      {/* Illustrative Scenarios (Element 8) */}
       <section className="max-w-7xl mx-auto px-6 mt-24 relative z-10 w-full">
-        <div className="text-center mb-12">
+        <div className="text-center mb-4">
           <h2 className="font-mono text-xs font-bold text-[#ffaa00] uppercase tracking-[0.25em] mb-3">
-            TRUST & VALIDATION
+            WHO IT&apos;S FOR
           </h2>
           <h3 className="font-mono text-2xl sm:text-4xl font-extrabold text-white uppercase tracking-tight">
-            Audited by Leading Security Teams
+            Built for People Who Can&apos;t Trust a Custodian
           </h3>
         </div>
-        
+
+        {/* Honesty signal: these are illustrative personas, not real endorsements */}
+        <div className="flex justify-center mb-12">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg border border-white/10 bg-white/2 font-mono text-[10px] text-slate-400">
+            <Info className="w-3 h-3 text-[#00f0ff]" />
+            <span>Illustrative usage scenarios — not real testimonials. See Hackathon Simulation Context below.</span>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
             {
-              quote: "Epoch solves the hardest problem in crypto inheritance—how to pass secrets without giving a single custodian full trust. The hardware-level memory boundaries are flawlessly implemented.",
-              author: "Dr. Elena Rostova",
-              role: "Principal Cryptographer, CertiK",
-              avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&h=150&q=80"
+              quote: "After a serious diagnosis I needed my heirs to receive my hardware-wallet seed — but only if I actually went silent. No exchange or lawyer ever holds the keys.",
+              persona: "Self-custody holder",
+              context: "Crypto inheritance",
+              Icon: Coins
             },
             {
-              quote: "Using blind egress matching with http-with-placeholders is a massive leap forward. The enclave handles execution but never gains sight of raw beneficiary contact info.",
-              author: "Marcus Chen",
-              role: "Security Director, Trail of Bits",
-              avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&h=150&q=80"
+              quote: "If I miss my check-ins, my source documents reach the newsroom automatically — and the enclave dispatches them without ever seeing the journalists' contact details.",
+              persona: "Investigative journalist",
+              context: "Source continuity",
+              Icon: Newspaper
             },
             {
-              quote: "The monotonic liveness invariant makes NTP tampering impossible. For organizations seeking automated disaster recovery keys, this setup is the gold standard.",
-              author: "Sarah Jenkins",
-              role: "Lead Infrastructure Architect, Arbitrum Foundation",
-              avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&h=150&q=80"
+              quote: "We need disaster-recovery keys to release to named officers only on confirmed inactivity, with a signed receipt — without any vendor able to peek before then.",
+              persona: "Family-office security lead",
+              context: "Institutional continuity",
+              Icon: Landmark
             }
           ].map((t, idx) => (
             <div key={idx} className="p-6 rounded-2xl border border-white/5 bg-white/2 hover:bg-white/5 transition-all flex flex-col justify-between">
@@ -614,14 +642,12 @@ export default function Dashboard() {
                 &ldquo;{t.quote}&rdquo;
               </p>
               <div className="flex items-center gap-3">
-                <img 
-                  src={t.avatar} 
-                  alt={t.author} 
-                  className="w-10 h-10 rounded-full border border-white/10 object-cover"
-                />
+                <div className="w-10 h-10 rounded-full border border-white/10 bg-[#ffaa00]/5 flex items-center justify-center">
+                  <t.Icon className="w-4 h-4 text-[#ffaa00]" />
+                </div>
                 <div className="flex flex-col">
-                  <span className="font-mono text-xs font-bold text-white">{t.author}</span>
-                  <span className="font-mono text-[9px] text-slate-500">{t.role}</span>
+                  <span className="font-mono text-xs font-bold text-white">{t.persona}</span>
+                  <span className="font-mono text-[9px] text-slate-500">{t.context}</span>
                 </div>
               </div>
             </div>
@@ -697,6 +723,25 @@ export default function Dashboard() {
           >
             {isFired ? 'Panic Dispatched' : 'Force Panic Release'}
           </button>
+        </div>
+      </section>
+
+      {/* Hackathon Simulation Context (honesty disclaimer) */}
+      <section className="max-w-4xl mx-auto px-6 mt-16 z-10 relative w-full">
+        <div className="p-6 rounded-2xl border border-[#00f0ff]/20 bg-[#00f0ff]/2 flex flex-col gap-3">
+          <h3 className="font-mono text-xs font-bold text-[#00f0ff] uppercase flex items-center gap-2">
+            <Info className="w-4 h-4" />
+            Hackathon Simulation Context
+          </h3>
+          <p className="font-sans text-xs text-slate-400 leading-relaxed">
+            Epoch is a demo built for the DoraHacks T3 ADK Launch Edition. The Intel TDX attestation, OTP
+            delivery, beneficiary egress, and clock advance run in a <span className="text-slate-200">local sandbox</span>:
+            the dead-man&apos;s switch logic executes as a real Rust&rarr;WASM contract against simulated Terminal 3
+            host APIs, time can be fast-forwarded with the Time-Warp control, and the &ldquo;SMS&rdquo; OTP is printed to
+            the console. The personas above are <span className="text-slate-200">illustrative use cases, not real endorsements</span>.
+            What is real: two compiled WASM enclave contracts, a synchronous <span className="text-slate-200">contracts-call</span>
+            cascade with atomic rollback, HMAC-SHA256 TOTP verification, and PII-blind <span className="text-slate-200">http-with-placeholders</span> egress.
+          </p>
         </div>
       </section>
 

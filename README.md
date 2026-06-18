@@ -56,34 +56,48 @@ After a serious medical diagnosis or for secure institutional continuity, users 
 |---|---|
 | **Frontend UI** | Next.js 16 (App Router), React 19, Tailwind CSS |
 | **Secure Enclave** | Intel TDX TEE |
-| **Contract / Core Logic** | Rust compiled to WebAssembly (`wasm32-unknown-unknown`) |
-| **Integrations** | Terminal 3 ADK Host APIs (KV Store, Clock, HTTP with Placeholders, VC Signing) |
+| **Contract / Core Logic** | **Two** Rust→WASM enclave contracts (`wasm32-unknown-unknown`): the **Switch Coordinator** (`contract/`) and the **Egress Dispatcher** (`contract-executor/`) |
+| **Integrations** | 8 Terminal 3 ADK Host APIs — `kv-store`, `clock`, `signing`, `stash`, `logging`, `contracts-call`, `outbox`, `http-with-placeholders` |
 | **E2E Testing** | Playwright |
-| **Performance Audit** | Lighthouse CI |
+| **Performance Audit** | Lighthouse CI + `scripts/bench.py` |
 
-### Enclave Egress Flow:
+### Two-Contract Atomic Cascade:
+The **Switch Coordinator** never performs egress itself. When a switch expires it invokes the **Egress Dispatcher** ("Blind Courier") synchronously via `contracts-call`. The whole release is one atomic transaction: if the Dispatcher reports any failed delivery, the Coordinator aborts — the switch is **not** marked fired, **no** VC is issued, and **nothing** is enqueued to the durable outbox, so the vault keys stay sealed.
+
 ```mermaid
 graph TD
-    A[User Heartbeat] -->|Valid OTP Check-in| B(Switch Custodian Agent TEE)
-    B -->|Silent Timeout| C[Expired Status]
-    C -->|Trigger Cascade| D[Egress Dispatcher]
-    D -->|Decrypt Keys| E[(Sealed Vault)]
-    D -->|http-with-placeholders| F[Beneficiaries Target]
+    A[User Heartbeat] -->|Valid OTP Check-in| B(Switch Coordinator · WASM #1)
+    B -->|Silent Timeout · monotonic clock| C[Expired Status]
+    C -->|fire_epoch| B
+    B -->|host_contracts_call| D(Egress Dispatcher · WASM #2)
+    D -->|http-with-placeholders| F[Beneficiaries · PII-blind]
+    D -->|success/failure| B
+    B -->|on success: signing VC + stash audit + outbox| G[(Durable Outbox)]
+    B -->|on failure: ROLLBACK| H[Keys stay sealed]
     style B fill:#ffaa00,stroke:#333,stroke-width:2px,color:#000
     style D fill:#00f0ff,stroke:#333,stroke-width:2px,color:#000
-    style E fill:#22c55e,stroke:#333,stroke-width:2px,color:#fff
+    style G fill:#22c55e,stroke:#333,stroke-width:2px,color:#fff
+    style H fill:#ef4444,stroke:#333,stroke-width:2px,color:#fff
 ```
 
 ---
 
 ## 🏆 Sponsor Tracks Targeted
 
-### T3 ADK Developer Track
-- **kv-store API**: Sealed storage of user switch configuration and encrypted vault keys. (Implemented in Wasm contract imports `host_kv_store_get` and `host_kv_store_set` in [contract/src/lib.rs:L86-110](contract/src/lib.rs#L86-110)).
-- **clock API**: Monotonic clock usage for countdown duration evaluation, preventing tampering. (Used via `host_clock_now` in [contract/src/lib.rs:L112-114](contract/src/lib.rs#L112-114)).
-- **http-with-placeholders API**: Secure egress alerts to beneficiaries replacing did profile PII markers. (Used via `host_http_with_placeholders_post` in [contract/src/lib.rs:L482-488](contract/src/lib.rs#L482-488)).
-- **signing API**: Issuance of a Verifiable Credential receipt verifying the success/failure of the atomic legacy cascade. (Used via `host_signing_issue_vc` in [contract/src/lib.rs:L516-520](contract/src/lib.rs#L516-520)).
-- **stash API**: Sealed storage of user documents and files. (Used via `host_stash_put` and `host_stash_get` in [contract/src/lib.rs:L120-150](contract/src/lib.rs#L120-150)).
+### T3 ADK Developer Track — 8 Host APIs across 2 enclave contracts
+
+**Switch Coordinator** ([`contract/src/lib.rs`](contract/src/lib.rs)):
+- **`kv-store`**: Sealed storage of switch config and encrypted vault keys (`host_kv_store_get` / `host_kv_store_set`).
+- **`clock`**: Monotonic countdown evaluation + TOTP time-window, immune to NTP tampering (`host_clock_now`).
+- **`signing`**: Issues a W3C `LegacyReleaseCredential` VC receipt for the cascade (`host_signing_issue_vc`).
+- **`stash`**: Retrieves sealed vault files and uploads the release audit manifest (`host_stash_get` / `host_stash_put`).
+- **`logging`**: In-enclave audit trace (`host_logging_log`).
+- **`contracts-call`** ⭐: Synchronously invokes the Egress Dispatcher contract as an atomic sub-transaction (`host_contracts_call`).
+- **`outbox`**: Durable, idempotent (`idk`-keyed) enqueue of the release event on success (`host_outbox_enqueue`).
+
+**Egress Dispatcher** ([`contract-executor/src/lib.rs`](contract-executor/src/lib.rs)):
+- **`http-with-placeholders`** ⭐: PII-blind beneficiary egress — substitutes `{{profile.*}}` markers at the host boundary so neither contract sees plaintext contacts (`host_http_with_placeholders_post`).
+- **`logging`**: Courier-side delivery trace (`host_logging_log`).
 
 
 ---
@@ -110,14 +124,21 @@ graph TD
    npm install
    ```
 
-3. **Compile the WASM Contract:**
+3. **Compile both WASM enclave contracts:**
    ```bash
-   cd contract
-   cargo build --target wasm32-unknown-unknown --release
-   cd ..
+   # Builds the Switch Coordinator + Egress Dispatcher and copies both into src/lib/
+   make build-contracts
+   ```
+   <details><summary>…or manually</summary>
+
+   ```bash
+   cargo build --manifest-path contract/Cargo.toml --target wasm32-unknown-unknown --release
+   cargo build --manifest-path contract-executor/Cargo.toml --target wasm32-unknown-unknown --release
    mkdir -p src/lib
    cp contract/target/wasm32-unknown-unknown/release/epoch_contract.wasm src/lib/
+   cp contract-executor/target/wasm32-unknown-unknown/release/epoch_executor.wasm src/lib/
    ```
+   </details>
 
 4. **Setup Environment:**
    ```bash
@@ -137,6 +158,7 @@ We enforce a **6-stage pipeline**: Quality → Security → Build → E2E → Pe
 
 ```bash
 # ── Local Automation ────────────────────────
+make test-contract # Run Rust enclave contract unit tests (both contracts)
 make e2e           # Run Playwright E2E tests
 make lighthouse    # Run Lighthouse CI performance audit
 make security-scan # Run high/critical security scan
@@ -144,18 +166,36 @@ make security-scan # Run high/critical security scan
 # ── Code Quality ────────────────────────────
 npm run lint       # Lint check
 npm run typecheck  # TypeScript compiler check
-npm run test       # Run unit tests
+npm run test       # Run unit tests (Vitest)
+
+# ── Performance ─────────────────────────────
+npm run dev &              # start the app
+python3 scripts/bench.py   # measure p50/p95 latency (stdlib only)
 ```
 
 | Layer | Tool | Status |
 |---|---|---|
 | Code Quality | ESLint + TypeScript | ✅ Passed |
-| Unit Testing | Jest (100% coverage) | ✅ Passed |
+| Unit Testing (TS) | Vitest — **193 tests** | ✅ Passed |
+| Contract Testing (Rust) | cargo — **26 tests** (20 Coordinator + 6 Dispatcher) | ✅ Passed |
 | E2E Testing | Playwright (3 suites) | ✅ Passed |
 | Security (SAST) | CodeQL | ✅ Active |
 | Security (SCA) | Dependabot + npm audit | ✅ Clean |
 | Secret Scanning | TruffleHog | ✅ Configured |
-| Performance | Lighthouse CI | ✅ Configured |
+| Performance | Lighthouse CI + `bench.py` | ✅ Configured |
+
+### ⚡ Runtime Latency (local sandbox)
+
+Measured with `scripts/bench.py` (100 iterations + 10 warmup) against `npm run dev` on Apple Silicon. Representative numbers — re-run to reproduce:
+
+| Path | p50 | p95 | p99 |
+|---|---|---|---|
+| `get_status` (WASM) | 4.1 ms | 10.8 ms | 11.9 ms |
+| `check_trigger` (WASM) | 3.8 ms | 5.9 ms | 13.5 ms |
+| `integrations/verify` (host) | 2.7 ms | 4.9 ms | 5.8 ms |
+| **`arm + expire + fire` cascade** | **15.5 ms** | **22.0 ms** | **26.6 ms** |
+
+> The full-cascade row exercises the real path: a synchronous **`contracts-call`** into the Egress Dispatcher contract, **`http-with-placeholders`** egress, **`signing`** VC issuance, a **`stash`** audit upload, and a durable **`outbox`** enqueue — all as one atomic transaction.
 
 ---
 
@@ -172,11 +212,14 @@ epoch/
 ├── src/
 │   ├── app/           # Next.js 16 App Router Pages
 │   ├── components/    # React 19 Components
-│   └── lib/           # Enclave WASM & Client API Wrappers
-├── contract/          # Rust/WASM TEE Contract Source
+│   └── lib/           # Compiled enclave WASM (x2) & Client API Wrappers
+├── contract/          # Switch Coordinator — Rust/WASM TEE contract (#1)
+├── contract-executor/ # Egress Dispatcher — Rust/WASM TEE contract (#2)
 ├── e2e/                # Playwright E2E Tests
 ├── test/               # Vitest Integration Tests
+├── scripts/            # seed.py, bench.py, submission checks
 ├── .github/           # GitHub Actions CI Workflows
+├── BUGS.md            # T3 ADK bug/gap audit (Track 2)
 ├── eslint.config.mjs  # ESLint 9 configuration
 ├── Makefile           # Local Automation Targets
 ├── lighthouserc.json  # Lighthouse CI audit config
@@ -189,17 +232,15 @@ epoch/
 
 This project is submitted to the **Terminal 3 ADK Dev Challenge 2026** as part of the **Vouch Suite** (a 5-enclave system including Epoch, Lethe, Silo, Synod, and Visor).
 
-During the development and integration of these enclaves, we completed a thorough audit of the Terminal 3 Agent Dev Kit (ADK) host APIs and SDK, identifying **six concrete onboarding bugs and documentation gaps** that we have compiled for the dev challenge judges:
+While building these enclaves we audited the T3 ADK host APIs and SDK and documented **9 concrete onboarding bugs and documentation gaps** — each with a repro, impact, and the workaround we shipped — for the **Track 2 bug bounty**.
 
-1. **Bug #1: Undocumented Parameter in `metamask_sign`:** The SDK setup instructions specify `EthSign: metamask_sign(address, undefined, T3N_API_KEY)` without documenting what the second parameter (passed as `undefined`) does or configures, creating blocker questions for custom wallet bindings.
-2. **Bug #2: `kv-store` Interface Discrepancy (Map Name vs. Flat Keys):** The official WIT file (`package.wit`) declares KV operations as `get: func(map-name: string, key: list<u8>)`. However, the raw C imports and local runtimes assume a single flat namespace where `host_kv_store_get` only takes `key_ptr` and `key_len` parameters. This makes it impossible to build WASM Component-compliant code without renaming/wrapping guest imports.
-3. **Bug #3: Clock API Method Name Mismatch:** Walkthroughs reference `fn host_clock_now() -> u64`, but the dependency WIT packages require `now-ms: func() -> result<u64, clock-error>`. This causes cargo compilation errors when targeting standard `wasm32-wasip2` components.
-4. **Bug #4: Missing `host_signing_issue_vc` in `signing` WIT Interface:** The non-WIT templates call `host_signing_issue_vc` to sign and issue Verifiable Credentials. However, the official WIT `signing` interface only exposes `sign: func(message: list<u8>) -> result<list<u8>, sign-error>`, with no VC-level helper functions.
-5. **Gap #5: Opaque `loadWasmComponent` Path Resolution:** The setup guides invoke `await loadWasmComponent()` with zero arguments, but do not document where the `.wasm` component files are resolved from, or how developers can override the path for local components.
-6. **Gap #6: Tenant DID Hex Double-Encoding Trap:** The developer cheatsheet suggests map names are resolved via `format!("z:{}:secrets", hex::encode(&tid))` where `tid` is `tenant_did()`. If `tenant_did()` returns a string (e.g. `did:t3n:f600...`), `hex::encode` will double-encode the ASCII representation, breaking KV routing.
-7. **Gap #7: Public KV Route specifications:** The guides mention that public maps are world-readable via `/api/dev/public-kv/<tid>/<tail>`. However, there is no documentation on CORS policies, cache-control headers, or pagination query schemas.
-8. **Gap #8: Transaction Rollback Semantics Undocumented:** The documentation lacks explanation on how to trigger state rollbacks programmatically when a contract function returns an `Err`.
-9. **Gap #9: Outbox Idempotency Lifecycles:** The `outbox` interface enqueues webhooks using an `idk` (idempotency key), but details about the deduplication window lifespan and queue overflow behaviors are undocumented.
+➡️ **See [BUGS.md](BUGS.md)** for the full audit. Highlights:
+
+- **Bug #2 — `kv-store` interface discrepancy:** WIT declares `get(map-name, key)` but the C ABI is flat `(key_ptr, key_len)`.
+- **Bug #3 — `clock` name mismatch:** docs say `host_clock_now() -> u64`; WIT requires `now-ms() -> result<u64, clock-error>`.
+- **Bug #4 — `signing` has no VC helper:** templates call `host_signing_issue_vc`, but WIT only exposes raw `sign`.
+- **Gap #6 — tenant DID hex double-encoding** silently breaks KV routing.
+- **Gap #8 / #9 — rollback boundary & `outbox` idempotency window** are unspecified — both directly affect Epoch's atomic cascade.
 
 ---
 
