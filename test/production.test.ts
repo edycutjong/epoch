@@ -1013,5 +1013,71 @@ describe('Next.js API Route Handlers', () => {
       // Restore
       fs.writeFileSync(dbPath, originalDb);
     });
+
+    it('should auto-seed current environment DID switch and profile if missing', () => {
+      const oldVitest = process.env.VITEST;
+      delete process.env.VITEST;
+
+      const oldDid = process.env.DID;
+      const oldApiKey = process.env.T3N_API_KEY;
+
+      const dbPath = require('path').resolve(process.cwd(), 'data/db.json');
+      const originalDb = fs.readFileSync(dbPath, 'utf-8');
+
+      try {
+        // Test Case A: did:t3n:david123
+        process.env.DID = 'did:t3n:david123';
+        process.env.T3N_API_KEY = 'DAVID_SECRET_KEY';
+        
+        const parsedA = JSON.parse(originalDb);
+        delete parsedA.kv['epoch:switch:david123'];
+        delete parsedA.kv['epoch:vault:david123'];
+        if (parsedA.profiles) {
+          delete parsedA.profiles['did:t3n:david123'];
+        }
+        fs.writeFileSync(dbPath, JSON.stringify(parsedA));
+
+        let db = dbModule.readDb();
+        expect(db.kv['epoch:switch:david123']).toBeDefined();
+        expect(db.profiles['did:t3n:david123'].first_name).toBe('David');
+
+        // Test Case B: custom did
+        process.env.DID = 'did:t3n:customuser';
+        process.env.T3N_API_KEY = 'CUSTOM_KEY';
+        
+        const parsedB = JSON.parse(originalDb);
+        delete parsedB.kv['epoch:switch:customuser'];
+        delete parsedB.kv['epoch:vault:customuser'];
+        if (parsedB.profiles) {
+          delete parsedB.profiles['did:t3n:customuser'];
+        }
+        fs.writeFileSync(dbPath, JSON.stringify(parsedB));
+
+        db = dbModule.readDb();
+        expect(db.kv['epoch:switch:customuser']).toBeDefined();
+        expect(db.profiles['did:t3n:customuser'].first_name).toBe('Terminal 3 User');
+
+        // Test Case C: default fallback
+        delete process.env.DID;
+        delete process.env.T3N_API_KEY;
+
+        const parsedC = JSON.parse(originalDb);
+        delete parsedC.kv['epoch:switch:david123'];
+        delete parsedC.kv['epoch:vault:david123'];
+        if (parsedC.profiles) {
+          delete parsedC.profiles['did:t3n:david123'];
+        }
+        fs.writeFileSync(dbPath, JSON.stringify(parsedC));
+
+        db = dbModule.readDb();
+        expect(db.kv['epoch:switch:david123']).toBeDefined();
+        expect(db.profiles['did:t3n:david123'].first_name).toBe('David');
+      } finally {
+        process.env.VITEST = oldVitest;
+        process.env.DID = oldDid;
+        process.env.T3N_API_KEY = oldApiKey;
+        fs.writeFileSync(dbPath, originalDb);
+      }
+    });
   });
 });

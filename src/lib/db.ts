@@ -88,6 +88,47 @@ export function readDb(): DbSchema {
     if (!data.stash) {
       data.stash = {};
     }
+
+    // Auto-seed the current environment DID if not present (skip during test suite runs)
+    if (!process.env.VITEST) {
+      const activeDid = process.env.DID || 'did:t3n:david123';
+      const activeSecret = process.env.T3N_API_KEY || 'DAVID_SECRET_KEY';
+      const switchId = activeDid.replace('did:t3n:', '');
+      const switchKey = `epoch:switch:${switchId}`;
+
+      if (!data.kv[switchKey]) {
+        const defaultSwitch = {
+          id: switchId,
+          gracePeriod: 1209600000, // 14 days
+          lastHeartbeat: Date.now(),
+          status: 'active',
+          beneficiaries: ['{{profile.verified_contacts.email.value}}'],
+          otpSecret: activeSecret
+        };
+
+        const defaultVault = {
+          stashRefs: ['stash://ref-1'],
+          encryptedKeys: '0x-ephemeral-ecdh-aes-gcm-key-agreement-vector'
+        };
+
+        data.kv[switchKey] = JSON.stringify(defaultSwitch);
+        data.kv[`epoch:vault:${switchId}`] = JSON.stringify(defaultVault);
+
+        if (!data.profiles[activeDid]) {
+          data.profiles[activeDid] = {
+            first_name: activeDid.includes('david123') ? 'David' : 'Terminal 3 User',
+            verified_contacts: {
+              email: {
+                value: activeDid.includes('david123') ? 'david@legacy-switch.org' : 't3user@terminal3.io'
+              }
+            }
+          };
+        }
+
+        fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
+      }
+    }
+
     return data;
   } catch (e) {
     return { kv: {}, profiles: {}, legacyTargets: [], dispatchedNotifications: [], stash: {} };
