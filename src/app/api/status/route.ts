@@ -90,9 +90,19 @@ export async function POST(request: Request) {
     // Also output to console logs as required by DEMO.md
     console.log(`[Enclave Debug] Simulated Time: ${new Date(now).toISOString()} | Active OTP: ${debugOtp}`);
 
+    let decryptedKeys = undefined;
+    if (result.status === 'fired') {
+      try {
+        const vaultKey = `epoch:vault:${switchId}`;
+        const vaultState = JSON.parse(db.kv[vaultKey]);
+        decryptedKeys = vaultState.encrypted_keys || vaultState.encryptedKeys;
+      } catch (e) {}
+    }
+
     return NextResponse.json({
       ...result,
-      debugOtp
+      debugOtp,
+      decryptedKeys
     });
   } catch (error: any) {
     console.error('API status failed:', error);

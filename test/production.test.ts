@@ -747,6 +747,7 @@ describe('Next.js API Route Handlers', () => {
       db.kv['epoch:switch:2'] = JSON.stringify({ status: 'expired' });
       db.kv['epoch:switch:3'] = JSON.stringify({ status: 'fired' });
       db.kv['epoch:switch:4'] = '{ malformed JSON '; // to test JSON parsing catch block
+      db.kv['other:non-matching-key'] = 'some-value';
       db.dispatchedNotifications = [{}, {}];
       writeDb(db);
 
@@ -979,6 +980,35 @@ describe('Next.js API Route Handlers', () => {
       expect(res.status).toBe(500);
       expect(await res.json()).toEqual({ error: 'Internal Server Error' });
     });
+
+    it('should retrieve status with decryptedKeys when switch is fired', async () => {
+      const db = readDb();
+      db.kv = {};
+      db.kv['epoch:switch:test-fired'] = JSON.stringify({
+        id: 'test-fired',
+        gracePeriod: 1209600000,
+        lastHeartbeat: Date.now() - 15 * 86400000,
+        status: 'fired',
+        otpSecret: 'DAVID_SECRET_KEY'
+      });
+      db.kv['epoch:vault:test-fired'] = JSON.stringify({
+        stashRefs: ['stash-1'],
+        encryptedKeys: 'my-decrypted-keys'
+      });
+      writeDb(db);
+
+      vi.spyOn(wasmRunner, 'runWasmContract').mockResolvedValueOnce({
+        status: 'fired',
+        timeLeft: 0,
+        gracePeriod: 1209600000
+      });
+
+      const res = await callPostHandler(statusPost, { switchId: 'test-fired' });
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.status).toBe('fired');
+      expect(data.decryptedKeys).toBe('my-decrypted-keys');
+    });
   });
 
   describe('db.ts additional coverage', () => {
@@ -1072,6 +1102,72 @@ describe('Next.js API Route Handlers', () => {
         db = dbModule.readDb();
         expect(db.kv['epoch:switch:david123']).toBeDefined();
         expect(db.profiles['did:t3n:david123'].first_name).toBe('David');
+      } finally {
+        process.env.VITEST = oldVitest;
+        process.env.DID = oldDid;
+        process.env.T3N_API_KEY = oldApiKey;
+        fs.writeFileSync(dbPath, originalDb);
+      }
+    });
+
+    it('should cover directory creation branch in initDb', () => {
+      const dbPath = require('path').resolve(process.cwd(), 'data/db.json');
+      const dirPath = require('path').dirname(dbPath);
+      
+      const existsMock = vi.spyOn(fs, 'existsSync').mockImplementation((p) => {
+        if (p === dirPath) return false;
+        return true;
+      });
+      const mkdirMock = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined as any);
+      
+      try {
+        dbModule.initDb();
+        expect(mkdirMock).toHaveBeenCalledWith(dirPath, { recursive: true });
+      } finally {
+        existsMock.mockRestore();
+        mkdirMock.mockRestore();
+      }
+    });
+
+    it('should cover clearDb when database does not exist', () => {
+      const dbPath = require('path').resolve(process.cwd(), 'data/db.json');
+      const originalDb = fs.readFileSync(dbPath, 'utf-8');
+      
+      if (fs.existsSync(dbPath)) fs.unlinkSync(dbPath);
+      
+      dbModule.clearDb();
+      
+      expect(fs.existsSync(dbPath)).toBe(true);
+      
+      fs.writeFileSync(dbPath, originalDb);
+    });
+
+    it('should cover branch when profile already exists during auto-seed', () => {
+      const oldVitest = process.env.VITEST;
+      delete process.env.VITEST;
+      
+      const oldDid = process.env.DID;
+      const oldApiKey = process.env.T3N_API_KEY;
+      process.env.DID = 'did:t3n:david123';
+      process.env.T3N_API_KEY = 'DAVID_SECRET_KEY';
+      
+      const dbPath = require('path').resolve(process.cwd(), 'data/db.json');
+      const originalDb = fs.readFileSync(dbPath, 'utf-8');
+      
+      try {
+        const parsed = JSON.parse(originalDb);
+        delete parsed.kv['epoch:switch:david123'];
+        delete parsed.kv['epoch:vault:david123'];
+        parsed.profiles = {
+          'did:t3n:david123': {
+            first_name: 'ExistingDavid'
+          }
+        };
+        fs.writeFileSync(dbPath, JSON.stringify(parsed));
+        
+        const db = dbModule.readDb();
+        expect(db.kv['epoch:switch:david123']).toBeDefined();
+        expect(db.profiles['did:t3n:david123'].first_name).toBe('ExistingDavid');
       } finally {
         process.env.VITEST = oldVitest;
         process.env.DID = oldDid;
