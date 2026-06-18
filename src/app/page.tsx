@@ -21,18 +21,17 @@ const getSwitchIdFromDid = (did: string) => {
 };
 
 export default function Dashboard() {
-  const [files, setFiles] = useState(INITIAL_VAULT_FILES);
-
-  useEffect(() => {
+  const [files, setFiles] = useState<any[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('epoch:vault:files');
       if (saved) {
         try {
-          setFiles(JSON.parse(saved));
+          return JSON.parse(saved);
         } catch (e) {}
       }
     }
-  }, []);
+    return INITIAL_VAULT_FILES;
+  });
 
   const handleUpload = (newFile: any) => {
     setFiles((prev) => {
