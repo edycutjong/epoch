@@ -6,8 +6,9 @@ test.describe('Epoch Dead-Man\'s Switch Lifecycle Flow', () => {
     await page.goto('/');
     
     const resetButton = page.getByRole('button', { name: 'RESET SWITCH & SEED DATA' });
-    await expect(resetButton).toBeVisible();
     await resetButton.click();
+    // Wait for the asynchronous reset and seeding operation to fully finish
+    await expect(resetButton).toBeEnabled();
 
     // Verify initial state is active
     const statusPill = page.locator('div').filter({ hasText: /^(active|armed)$/i }).first();

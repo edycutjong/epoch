@@ -4,6 +4,14 @@ import { initDb, readDb, writeDb, getKv, setKv, clearDb } from '../src/lib/db';
 import { runWasmContract } from '../src/lib/wasmRunner';
 import * as wasmRunner from '../src/lib/wasmRunner';
 import * as dbModule from '../src/lib/db';
+import * as realVcModule from '../src/lib/realVc';
+import { verifyVc } from '@terminal3/verify_vc';
+
+vi.mock('@terminal3/verify_vc', () => {
+  return {
+    verifyVc: vi.fn().mockResolvedValue({ isValid: true, message: 'Verification successful' })
+  };
+});
 
 // Import API route handlers
 import { POST as armPost } from '../src/app/api/arm/route';
@@ -16,10 +24,14 @@ import { GET as notificationsGet } from '../src/app/api/notifications/route';
 import { POST as seedLegacyPost } from '../src/app/api/seed/legacy/route';
 import { POST as seedProfilePost } from '../src/app/api/seed/profile/route';
 import { POST as statusPost } from '../src/app/api/status/route';
+import { POST as verifyVcPost } from '../src/app/api/verify-vc/route';
 
 // Store in-memory db content
 let inMemoryDb: Record<string, string> = {};
 let mockWasmMissing = false;
+let mockExecutorWasmMissing = false;
+let mockDataDirExists = false;
+let mockWasmReadFail = false;
 
 vi.mock('fs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('fs')>();
@@ -35,9 +47,12 @@ vi.mock('fs', async (importOriginal) => {
         if (strPath.endsWith('epoch_contract.wasm')) {
           return !mockWasmMissing;
         }
+        if (strPath.endsWith('epoch_executor.wasm')) {
+          return !mockExecutorWasmMissing;
+        }
         // Force directory check to return false on the directory itself (not files inside it)
         if (strPath.endsWith('/data') || strPath.endsWith('\\data') || strPath.endsWith('data')) {
-          return false;
+          return mockDataDirExists;
         }
         return actual.existsSync(p);
       },
@@ -50,6 +65,9 @@ vi.mock('fs', async (importOriginal) => {
       },
       readFileSync: (p: fs.PathLike, options?: any) => {
         const strPath = p.toString();
+        if (mockWasmReadFail && strPath.endsWith('.wasm')) {
+          throw new Error('Simulated read failure');
+        }
         if (strPath.endsWith('db.json')) {
           if (inMemoryDb['db.json'] === undefined) {
             throw new Error('File not found');
@@ -511,6 +529,30 @@ describe('wasmRunner.ts tests', () => {
       deallocWasmMem(resBuf.ptr, resBuf.len);
     });
 
+    it('should throw error if Egress Dispatcher WASM binary is missing', () => {
+      mockExecutorWasmMissing = true;
+      const contractObj = writeToWasmMem('epoch-executor');
+      const fnObj = writeToWasmMem('execute_dispatch');
+      const payloadObj = writeToWasmMem('{}');
+      const resBuf = writeToWasmMem(' '.repeat(256));
+
+      try {
+        const len = capturedEnv.host_contracts_call(
+          contractObj.ptr, contractObj.len,
+          fnObj.ptr, fnObj.len,
+          payloadObj.ptr, payloadObj.len,
+          resBuf.ptr, resBuf.len
+        );
+        expect(len).toBe(-1);
+      } finally {
+        mockExecutorWasmMissing = false;
+        deallocWasmMem(contractObj.ptr, contractObj.len);
+        deallocWasmMem(fnObj.ptr, fnObj.len);
+        deallocWasmMem(payloadObj.ptr, payloadObj.len);
+        deallocWasmMem(resBuf.ptr, resBuf.len);
+      }
+    });
+
     it('host_outbox_enqueue should durably enqueue and dedupe on idempotency key', () => {
       const idkObj = writeToWasmMem('epoch-release-test-123');
       const payloadObj = writeToWasmMem(JSON.stringify({ event: 'legacy.released', switchId: 'test' }));
@@ -777,6 +819,44 @@ describe('Next.js API Route Handlers', () => {
       expect(res.status).toBe(500);
       expect(await res.json()).toEqual({ error: 'Internal Server Error' });
     });
+
+    it('should fire cascade and handle real VC signature failure by falling back to mock receipt', async () => {
+      await runWasmContract('arm_switch', {
+        switchId: 'test-fire-fallback-vc',
+        gracePeriod: 10000,
+        beneficiaries: ['friend@legacy-switch.org'],
+        stashRefs: ['stash://ref-1'],
+        encryptedKeys: '0x-keys',
+        otpSecret: 'DAVID_SECRET_KEY'
+      });
+      await runWasmContract('check_trigger', { switchId: 'test-fire-fallback-vc', clockOffset: 20000 });
+
+      // Mock issueReleaseVc to throw
+      const spyIssue = vi.spyOn(realVcModule, 'issueReleaseVc').mockRejectedValueOnce(new Error('Sign VC error'));
+
+      const res = await callPostHandler(fireEpochPost, { switchId: 'test-fire-fallback-vc' });
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.success).toBe(true);
+      expect(data.vcReceiptReal).toBe(false);
+
+      spyIssue.mockRestore();
+    });
+
+    it('should handle fire cascade with undefined stepsExecuted and missing releaseLogStashRef', async () => {
+      vi.spyOn(wasmRunner, 'runWasmContract').mockResolvedValueOnce({
+        success: true,
+        status: 'fired',
+        stepsExecuted: undefined,
+        releaseLogStashRef: undefined
+      });
+
+      const res = await callPostHandler(fireEpochPost, { switchId: 'test-fire-undef' });
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.success).toBe(true);
+      expect(data.vcReceiptReal).toBe(true);
+    });
   });
 
   describe('api/heartbeat', () => {
@@ -808,6 +888,54 @@ describe('Next.js API Route Handlers', () => {
       const res = await callPostHandler(heartbeatPost, { switchId: 'test', otpCode: '123456' });
       expect(res.status).toBe(500);
       expect(await res.json()).toEqual({ error: 'Internal Server Error' });
+    });
+  });
+
+  describe('api/verify-vc', () => {
+    it('should return 400 if credential or proof is missing', async () => {
+      const res = await callPostHandler(verifyVcPost, {});
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.isValid).toBe(false);
+      expect(data.message).toBe('No signed credential provided');
+    });
+
+    it('should verify a valid credential successfully', async () => {
+      const env = await realVcModule.issueReleaseVc('ep-test', {
+        switchId: 'ep-test',
+        event: 'legacy.released',
+        firedAt: Date.now()
+      });
+
+      const res = await callPostHandler(verifyVcPost, { credential: env.credential });
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.isValid).toBe(true);
+    });
+
+    it('should return 500 if JSON body is malformed or verifyReleaseVc throws', async () => {
+      const req = new Request('http://localhost', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: 'invalid-json'
+      });
+      const res = await verifyVcPost(req);
+      expect(res.status).toBe(500);
+      const data = await res.json();
+      expect(data.isValid).toBe(false);
+      expect(data.message).toBeDefined();
+    });
+
+    it('should return 500 with default message if verifyReleaseVc throws a non-Error string', async () => {
+      const spyVerify = vi.spyOn(realVcModule, 'verifyReleaseVc').mockRejectedValueOnce('string error');
+
+      const res = await callPostHandler(verifyVcPost, { credential: { proof: {} } });
+      expect(res.status).toBe(500);
+      const data = await res.json();
+      expect(data.isValid).toBe(false);
+      expect(data.message).toBe('Internal Server Error');
+
+      spyVerify.mockRestore();
     });
   });
 
@@ -861,6 +989,44 @@ describe('Next.js API Route Handlers', () => {
       const res = await callGetHandler(verifyGet);
       expect(res.status).toBe(500);
       expect(await res.json()).toEqual({ error: 'Internal Server Error' });
+    });
+
+    it('should handle file read errors in sha256File helper gracefully', async () => {
+      mockWasmReadFail = true;
+      try {
+        const { GET: verifyGetNew } = await import('../src/app/api/integrations/verify/route?t=' + Date.now());
+        const res = await callGetHandler(verifyGetNew);
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.attestation.contracts.coordinator).toBe('sha256:unavailable');
+      } finally {
+        mockWasmReadFail = false;
+      }
+    });
+
+    it('should hit cachedMeasurement when process.env.VITEST is temporarily deleted', async () => {
+      const oldVitest = process.env.VITEST;
+      delete process.env.VITEST;
+      try {
+        const res1 = await callGetHandler(verifyGet);
+        expect(res1.status).toBe(200);
+        const res2 = await callGetHandler(verifyGet);
+        expect(res2.status).toBe(200);
+      } finally {
+        process.env.VITEST = oldVitest;
+      }
+    });
+
+    it('should handle missing WASM contract files in sha256File helper gracefully', async () => {
+      mockWasmMissing = true;
+      try {
+        const res = await callGetHandler(verifyGet);
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.attestation.contracts.coordinator).toBe('sha256:unavailable');
+      } finally {
+        mockWasmMissing = false;
+      }
     });
   });
 
@@ -1247,6 +1413,63 @@ describe('Next.js API Route Handlers', () => {
         process.env.T3N_API_KEY = oldApiKey;
         fs.writeFileSync(dbPath, originalDb);
       }
+    });
+
+    it('should skip auto-seeding if key already exists in db and process.env.VITEST is deleted', () => {
+      const oldVitest = process.env.VITEST;
+      delete process.env.VITEST;
+      
+      const activeDid = process.env.DID || 'did:t3n:david123';
+      const switchId = activeDid.replace('did:t3n:', '');
+      const switchKey = `epoch:switch:${switchId}`;
+      
+      try {
+        const db = dbModule.readDb();
+        expect(db.kv[switchKey]).toBeDefined();
+      } finally {
+        process.env.VITEST = oldVitest;
+      }
+    });
+
+    it('should cover directory already exists branch in initDb', () => {
+      mockDataDirExists = true;
+      try {
+        dbModule.initDb();
+      } finally {
+        mockDataDirExists = false;
+      }
+    });
+
+    it('covers all message and catch branches in verifyReleaseVc', async () => {
+      const mockedVerifyVc = vi.mocked(verifyVc);
+
+      mockedVerifyVc.mockResolvedValueOnce({ isValid: true } as any);
+      let res = await realVcModule.verifyReleaseVc({} as any);
+      expect(res.isValid).toBe(true);
+      expect(res.message).toBe('Verification successful');
+
+      mockedVerifyVc.mockResolvedValueOnce({ isValid: false } as any);
+      res = await realVcModule.verifyReleaseVc({} as any);
+      expect(res.isValid).toBe(false);
+      expect(res.message).toBe('Verification failed');
+
+      // Test custom message
+      mockedVerifyVc.mockResolvedValueOnce({ isValid: true, message: 'Custom success' } as any);
+      res = await realVcModule.verifyReleaseVc({} as any);
+      expect(res.isValid).toBe(true);
+      expect(res.message).toBe('Custom success');
+
+      // Test catch block with Error instance
+      mockedVerifyVc.mockRejectedValueOnce(new Error('custom error'));
+      res = await realVcModule.verifyReleaseVc({} as any);
+      expect(res.isValid).toBe(false);
+      expect(res.message).toBe('custom error');
+
+      // Test catch block with raw string (non-Error)
+      mockedVerifyVc.mockRejectedValueOnce('raw string error');
+      res = await realVcModule.verifyReleaseVc({} as any);
+      expect(res.isValid).toBe(false);
+      expect(res.message).toBe('Verification failed');
     });
   });
 });
