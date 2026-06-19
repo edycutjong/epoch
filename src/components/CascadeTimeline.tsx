@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { Play, ShieldAlert, Award, FileCheck, Check, X, RefreshCw } from 'lucide-react';
-import { verifyVc } from '@/lib/vcVerifier';
 
 interface CascadeTimelineProps {
   status: string;
@@ -26,28 +25,33 @@ export default function CascadeTimeline({
   // Check if we ran and got a rollback
   const isRollback = triggerResult && triggerResult.success === false && triggerResult.reverted;
 
-  const handleVerifyVc = () => {
+  // Verify the release receipt with the REAL Terminal 3 verifier
+  // (@terminal3/verify_vc) via the server route — genuine cryptographic check.
+  const handleVerifyVc = async () => {
     setVcVerifiedStatus('verifying');
     setVcError(null);
-    setTimeout(() => {
-      try {
-        if (!triggerResult || !triggerResult.vcReceipt) {
-          throw new Error('No VC receipt available for verification');
-        }
-        const parsed = JSON.parse(triggerResult.vcReceipt);
-        const jwt = parsed.credential;
-        const result = verifyVc(jwt);
-        if (result.success) {
-          setVcVerifiedStatus('success');
-        } else {
-          setVcVerifiedStatus('failed');
-          setVcError(result.error || 'Verification failed');
-        }
-      } catch (e: any) {
-        setVcVerifiedStatus('failed');
-        setVcError(e.message || 'Malformed credential JSON');
+    try {
+      if (!triggerResult || !triggerResult.vcReceipt) {
+        throw new Error('No VC receipt available for verification');
       }
-    }, 1200);
+      const parsed = JSON.parse(triggerResult.vcReceipt);
+      const credential = parsed.credential;
+      const res = await fetch('/api/verify-vc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential }),
+      });
+      const result = await res.json();
+      if (result.isValid) {
+        setVcVerifiedStatus('success');
+      } else {
+        setVcVerifiedStatus('failed');
+        setVcError(result.message || 'Verification failed');
+      }
+    } catch (e: any) {
+      setVcVerifiedStatus('failed');
+      setVcError(e.message || 'Malformed credential JSON');
+    }
   };
 
   return (
@@ -238,7 +242,11 @@ export default function CascadeTimeline({
             
             <div className="mt-2 flex gap-1.5 items-center font-mono text-[9px] text-slate-500">
               <FileCheck className="w-3.5 h-3.5 text-green-500" />
-              <span>Signed by: did:t3n:enclave-authority</span>
+              <span>
+                {triggerResult.vcReceiptReal
+                  ? `Real signed VC · ${triggerResult.vcSdk || '@terminal3/ecdsa_vc'} · verify with @terminal3/verify_vc`
+                  : 'Signed by: did:t3n:enclave-authority'}
+              </span>
             </div>
           </div>
         )}

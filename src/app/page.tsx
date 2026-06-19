@@ -740,7 +740,9 @@ export default function Dashboard() {
             host APIs, time can be fast-forwarded with the Time-Warp control, and the &ldquo;SMS&rdquo; OTP is printed to
             the console. The personas above are <span className="text-slate-200">illustrative use cases, not real endorsements</span>.
             What is real: two compiled WASM enclave contracts, a synchronous <span className="text-slate-200">contracts-call</span>
-            cascade with atomic rollback, HMAC-SHA256 TOTP verification, and PII-blind <span className="text-slate-200">http-with-placeholders</span> egress.
+            cascade with atomic rollback, HMAC-SHA256 TOTP verification, PII-blind <span className="text-slate-200">http-with-placeholders</span> egress,
+            and a <span className="text-slate-200">genuine Terminal 3 Verifiable Credential</span> receipt — signed with the real
+            <span className="text-slate-200"> @terminal3/ecdsa_vc</span> SDK and verified with <span className="text-slate-200">@terminal3/verify_vc</span> (click <span className="text-slate-200">Verify VC</span>).
           </p>
         </div>
       </section>
