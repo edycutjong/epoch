@@ -21,7 +21,7 @@ function sha256File(p: string): string | null {
 // `shasum -a 256 src/lib/epoch_contract.wasm src/lib/epoch_executor.wasm`.
 // In production this value is replaced by a hardware-signed Intel TDX quote.
 function getEnclaveMeasurement() {
-  if (cachedMeasurement) return cachedMeasurement;
+  if (cachedMeasurement && !process.env.VITEST) return cachedMeasurement;
   const base = path.resolve(process.cwd(), 'src/lib');
   const coordinator = sha256File(path.join(base, 'epoch_contract.wasm'));
   const dispatcher = sha256File(path.join(base, 'epoch_executor.wasm'));

@@ -15,11 +15,11 @@ function base64UrlEncode(str: string): string {
 // It is invoked synchronously by the Switch Coordinator through host_contracts_call.
 let cachedExecutorModule: WebAssembly.Module | null = null;
 function getExecutorModule(): WebAssembly.Module {
+  const execPath = path.resolve(process.cwd(), 'src/lib/epoch_executor.wasm');
+  if (!fs.existsSync(execPath)) {
+    throw new Error(`Egress Dispatcher binary not found at ${execPath}. Run cargo build for contract-executor first.`);
+  }
   if (!cachedExecutorModule) {
-    const execPath = path.resolve(process.cwd(), 'src/lib/epoch_executor.wasm');
-    if (!fs.existsSync(execPath)) {
-      throw new Error(`Egress Dispatcher binary not found at ${execPath}. Run cargo build for contract-executor first.`);
-    }
     cachedExecutorModule = new WebAssembly.Module(fs.readFileSync(execPath));
   }
   return cachedExecutorModule;
