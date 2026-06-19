@@ -1,3 +1,5 @@
+#![allow(clippy::missing_safety_doc)]
+
 use serde::{Deserialize, Serialize};
 use std::slice;
 use hmac::{Hmac, Mac};
@@ -53,7 +55,7 @@ pub extern "C" fn alloc(size: usize) -> *mut u8 {
 }
 
 #[no_mangle]
-pub extern "C" fn dealloc(ptr: *mut u8, size: usize) {
+pub unsafe extern "C" fn dealloc(ptr: *mut u8, size: usize) {
     let align = std::mem::align_of::<u8>();
     let layout = Layout::from_size_align(size, align).unwrap();
     unsafe { rust_dealloc(ptr, layout) }
@@ -275,9 +277,9 @@ fn calculate_totp_sha256(secret: &str, counter: u64) -> String {
     
     let offset = (result[result.len() - 1] & 0xf) as usize;
     let binary = ((result[offset] & 0x7f) as u32) << 24
-               | ((result[offset + 1] & 0xff) as u32) << 16
-               | ((result[offset + 2] & 0xff) as u32) << 8
-               | ((result[offset + 3] & 0xff) as u32);
+               | (result[offset + 1] as u32) << 16
+               | (result[offset + 2] as u32) << 8
+               | result[offset + 3] as u32;
                
     let otp = binary % 1000000;
     format!("{:06}", otp)
@@ -1225,9 +1227,11 @@ mod tests {
 
     #[test]
     fn test_alloc_and_dealloc() {
-        let ptr = alloc(128);
-        assert!(!ptr.is_null());
-        dealloc(ptr, 128);
+        unsafe {
+            let ptr = alloc(128);
+            assert!(!ptr.is_null());
+            dealloc(ptr, 128);
+        }
     }
 
     #[test]

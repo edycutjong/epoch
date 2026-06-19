@@ -1,3 +1,5 @@
+#![allow(clippy::missing_safety_doc)]
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Epoch — Egress Dispatcher Contract ("The Blind Courier")
 //
@@ -37,7 +39,7 @@ pub extern "C" fn alloc(size: usize) -> *mut u8 {
 }
 
 #[no_mangle]
-pub extern "C" fn dealloc(ptr: *mut u8, size: usize) {
+pub unsafe extern "C" fn dealloc(ptr: *mut u8, size: usize) {
     let align = std::mem::align_of::<u8>();
     let layout = Layout::from_size_align(size, align).unwrap();
     unsafe { rust_dealloc(ptr, layout) }
@@ -312,8 +314,10 @@ mod tests {
 
     #[test]
     fn test_alloc_dealloc() {
-        let p = alloc(64);
-        assert!(!p.is_null());
-        dealloc(p, 64);
+        unsafe {
+            let p = alloc(64);
+            assert!(!p.is_null());
+            dealloc(p, 64);
+        }
     }
 }
