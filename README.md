@@ -26,6 +26,8 @@
 
 ---
 
+> ⚡ **Reviewers / judges:** fastest path is **[GOLDEN_PATH.md](docs/GOLDEN_PATH.md)** — the entire flow in ~2 minutes, **no credentials**. Bug-bounty track: **[SDK_AUDIT.md](docs/SDK_AUDIT.md)** (confirmed, code-cited findings from the real `@terminal3` SDK).
+
 ## 📸 See it in Action
 
 <div align="center">
@@ -89,7 +91,7 @@ graph TD
 **Switch Coordinator** ([`contract/src/lib.rs`](contract/src/lib.rs)):
 - **`kv-store`**: Sealed storage of switch config and encrypted vault keys (`host_kv_store_get` / `host_kv_store_set`).
 - **`clock`**: Monotonic countdown evaluation + TOTP time-window, immune to NTP tampering (`host_clock_now`).
-- **`signing`**: Issues a W3C `LegacyReleaseCredential` VC receipt for the cascade (`host_signing_issue_vc`).
+- **`signing`**: Issues a W3C `LegacyReleaseCredential` VC receipt for the cascade. The host signing service uses the **real published Terminal 3 SDK** — [`@terminal3/ecdsa_vc`](https://www.npmjs.com/package/@terminal3/ecdsa_vc) to issue a genuine `EcdsaSecp256k1Signature2019` credential and [`@terminal3/verify_vc`](https://www.npmjs.com/package/@terminal3/verify_vc) to verify it (offline, no credentials — see [`src/lib/realVc.ts`](src/lib/realVc.ts), [`/api/verify-vc`](src/app/api/verify-vc/route.ts), and `test/realVc.test.ts`). A tampered VC fails verification.
 - **`stash`**: Retrieves sealed vault files and uploads the release audit manifest (`host_stash_get` / `host_stash_put`).
 - **`logging`**: In-enclave audit trace (`host_logging_log`).
 - **`contracts-call`** ⭐: Synchronously invokes the Egress Dispatcher contract as an atomic sub-transaction (`host_contracts_call`).

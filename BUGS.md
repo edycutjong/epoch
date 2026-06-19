@@ -7,6 +7,8 @@
 > T3 ADK host APIs and SDK. Each entry lists where it bit us and the workaround we
 > shipped, so it doubles as a fix checklist.
 
+> 🔬 **See [SDK_AUDIT.md](docs/SDK_AUDIT.md)** for **confirmed, code-cited security findings** verified directly from the *real published* `@terminal3` VC packages via `npm pack` (hardcoded BBS `nonce` → proof replay, revocation bypass, no holder/challenge binding). The list below is integration/documentation gaps; the audit is reproducible SDK bugs.
+
 | # | Area | Type | Severity |
 |---|---|---|---|
 | 1 | `metamask_sign` | Undocumented param | Low |
