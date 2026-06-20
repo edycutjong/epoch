@@ -26,7 +26,7 @@
 
 ---
 
-> ⚡ **Reviewers / judges:** fastest path is **[GOLDEN_PATH.md](docs/GOLDEN_PATH.md)** — the entire flow in ~2 minutes, **no credentials**. Bug-bounty track: **[SDK_AUDIT.md](docs/SDK_AUDIT.md)** (confirmed, code-cited findings from the real `@terminal3` SDK).
+> ⚡ **Reviewers / judges:** fastest path is **[GOLDEN_PATH.md](docs/GOLDEN_PATH.md)** — the entire flow in ~2 minutes, **no credentials**. Bug-bounty track: **[SDK_AUDIT.md](docs/SDK_AUDIT.md)** (confirmed, code-cited findings from the real `@terminal3` SDK). API reference: **[API.md](docs/API.md)**.
 
 ## 📸 See it in Action
 
@@ -205,12 +205,13 @@ Measured with `scripts/bench.py` (100 iterations + 10 warmup) against `npm run d
 
 ```
 epoch/
-├── docs/              # README and presentation assets
+├── docs/              # Documentation and presentation assets
 │   ├── assets/
 │   │   ├── screenshots/  # Walkthrough screenshots (01 to 08)
 │   │   └── icon-512.png
 │   ├── readme-hero.png
-│   └── PITCH_DECK.md
+│   ├── PITCH_DECK.md
+│   └── API.md         # Next.js Enclave API Routes documentation
 ├── src/
 │   ├── app/           # Next.js 16 App Router Pages
 │   ├── components/    # React 19 Components
