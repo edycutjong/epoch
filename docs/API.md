@@ -1,8 +1,8 @@
 # Epoch Enclave API Reference
 
-This document provides a comprehensive reference of all Next.js API routes (Route Handlers) implemented in [Epoch](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api). 
+This document provides a comprehensive reference of all Next.js API routes (Route Handlers) implemented in [/Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api). 
 
-The Next.js backend serves as the unsecure host gateway proxying calls to the secure TEE boundary. Under the hood, key endpoints delegate execution directly to the two compiled Rust→WASM enclave contracts: the **Switch Coordinator** (`epoch_contract.wasm`) and the **Egress Dispatcher** (`epoch_executor.wasm`) using the WASM Runner module [src/lib/wasmRunner.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/lib/wasmRunner.ts).
+The Next.js backend serves as the unsecure host gateway proxying calls to the secure TEE boundary. Under the hood, key endpoints delegate execution directly to the two compiled Rust→WASM enclave contracts: the **Switch Coordinator** (`epoch_contract.wasm`) and the **Egress Dispatcher** (`epoch_executor.wasm`) using the WASM Runner module [/Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/lib/wasmRunner.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/lib/wasmRunner.ts).
 
 ---
 
@@ -12,12 +12,12 @@ The Next.js backend serves as the unsecure host gateway proxying calls to the se
                  [ Client / UI / CLI ]
                            │
                            ▼
-               [ Next.js Host API Route ] (src/app/api/*)
+               [ Next.js Host API Route ] (/Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/*)
                            │
              ┌─────────────┴─────────────┐
              ▼                           ▼
       [ Mock DB / Store ]       [ WASM Enclave Coordinator ] (epoch_contract.wasm)
-      (src/lib/db.ts)                    │
+      (/Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/lib/db.ts)    │
                                          ├──────────────┐ (Atomic Cascade via host_contracts_call)
                                          ▼              ▼
                                 [ Egress Dispatcher ]  [ Host VC Signing Service ]
@@ -49,7 +49,7 @@ Errors are returned in the following JSON format:
 Arms a new dead-man's switch, registering the schedule configuration, encrypted keys, OTP configuration, and beneficiaries.
 
 *   **Endpoint:** `POST /api/arm`
-*   **Source:** [src/app/api/arm/route.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/arm/route.ts)
+*   **Source:** [/Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/arm/route.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/arm/route.ts)
 *   **Request Body:**
     *   `switchId` *(string, Required)*: Unique identifier for the switch.
     *   `gracePeriod` *(number, Required)*: The silence duration threshold (in seconds) before the switch expires.
@@ -93,7 +93,7 @@ Arms a new dead-man's switch, registering the schedule configuration, encrypted 
 Resets the countdown timer, keeping the switch active. Requires a valid simulated TOTP code matching the `otpSecret` of the switch.
 
 *   **Endpoint:** `POST /api/heartbeat`
-*   **Source:** [src/app/api/heartbeat/route.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/heartbeat/route.ts)
+*   **Source:** [/Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/heartbeat/route.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/heartbeat/route.ts)
 *   **Request Body:**
     *   `switchId` *(string, Required)*: Unique identifier for the switch.
     *   `otpCode` *(string, Required)*: The 6-digit TOTP code.
@@ -125,7 +125,7 @@ Resets the countdown timer, keeping the switch active. Requires a valid simulate
 Retrieves metadata, countdown thresholds, current states, and returns debug OTP code helpers. If the switch has been successfully fired, the sealed decryption keys are returned.
 
 *   **Endpoint:** `POST /api/status`
-*   **Source:** [src/app/api/status/route.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/status/route.ts)
+*   **Source:** [/Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/status/route.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/status/route.ts)
 *   **Request Body:**
     *   `switchId` *(string, Required)*: The unique identifier.
     *   `clockOffset` *(number, Optional)*: The simulated time drift offset in milliseconds.
@@ -171,7 +171,7 @@ Retrieves metadata, countdown thresholds, current states, and returns debug OTP 
 Evaluates whether the timer has run down past the threshold. This endpoint can be triggered repeatedly by a monitoring daemon or cron service to transition the switch state.
 
 *   **Endpoint:** `POST /api/check-trigger`
-*   **Source:** [src/app/api/check-trigger/route.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/check-trigger/route.ts)
+*   **Source:** [/Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/check-trigger/route.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/check-trigger/route.ts)
 *   **Request Body:**
     *   `switchId` *(string, Required)*: Unique identifier.
     *   `clockOffset` *(number, Optional)*: Simulated time drift in milliseconds.
@@ -199,7 +199,7 @@ Evaluates whether the timer has run down past the threshold. This endpoint can b
 Executes the blind legacy release chain. Invokes the Egress Dispatcher enclave via synchronous `contracts-call`, replaces placeholder metadata using `http-with-placeholders`, and registers a Verifiable Credential on success. If any step fails, it triggers a complete rollback.
 
 *   **Endpoint:** `POST /api/fire-epoch`
-*   **Source:** [src/app/api/fire-epoch/route.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/fire-epoch/route.ts)
+*   **Source:** [/Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/fire-epoch/route.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/fire-epoch/route.ts)
 *   **Request Body:**
     *   `switchId` *(string, Required)*: Unique identifier.
     *   `mockFailureStep` *(number, Optional)*: Simulation index to mock failures and test transactional rollbacks.
@@ -262,7 +262,7 @@ Executes the blind legacy release chain. Invokes the Egress Dispatcher enclave v
 Wipes switch parameters or clears out sandbox persistence entirely.
 
 *   **Endpoint:** `POST /api/cancel`
-*   **Source:** [src/app/api/cancel/route.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/cancel/route.ts)
+*   **Source:** [/Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/cancel/route.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/cancel/route.ts)
 *   **Request Body:**
     *   `switchId` *(string, Optional)*: The identifier of the switch to delete.
     *   `reset` *(boolean, Optional)*: If `true`, completely clears the local mock database.
@@ -291,7 +291,7 @@ Wipes switch parameters or clears out sandbox persistence entirely.
 Validates the cryptographically signed Verifiable Credential receipt produced after a successful switch cascade. Verifies signatures locally using the `@terminal3/verify_vc` package.
 
 *   **Endpoint:** `POST /api/verify-vc`
-*   **Source:** [src/app/api/verify-vc/route.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/verify-vc/route.ts)
+*   **Source:** [/Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/verify-vc/route.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/verify-vc/route.ts)
 *   **Request Body:**
     *   `credential` *(object, Required)*: The complete VC JSON object payload.
 *   **Response:**
@@ -334,7 +334,7 @@ Validates the cryptographically signed Verifiable Credential receipt produced af
 Lists the history of notifications sent out to beneficiaries via the blind egress dispatcher.
 
 *   **Endpoint:** `GET /api/notifications`
-*   **Source:** [src/app/api/notifications/route.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/notifications/route.ts)
+*   **Source:** [/Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/notifications/route.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/notifications/route.ts)
 *   **Response:**
     *   `notifications` *(array of objects)*: List of delivery logs, showing the redacted placeholder results.
 *   **Response Example:**
@@ -358,7 +358,7 @@ Lists the history of notifications sent out to beneficiaries via the blind egres
 Generates real binary SHA-256 code measurements for the compiled enclave WASM binaries, reports clock drift, and returns host status.
 
 *   **Endpoint:** `GET /api/integrations/verify`
-*   **Source:** [src/app/api/integrations/verify/route.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/integrations/verify/route.ts)
+*   **Source:** [/Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/integrations/verify/route.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/integrations/verify/route.ts)
 *   **Response:**
     *   `enclaveStatus` *(string)*: Current state (`online`).
     *   `hardwareIsolation` *(string)*: Core CPU shielding technology (`Intel TDX`).
@@ -400,7 +400,7 @@ Generates real binary SHA-256 code measurements for the compiled enclave WASM bi
 Injects mock beneficiary information or external target templates into the sandbox database.
 
 *   **Endpoint:** `POST /api/seed/legacy`
-*   **Source:** [src/app/api/seed/legacy/route.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/seed/legacy/route.ts)
+*   **Source:** [/Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/seed/legacy/route.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/seed/legacy/route.ts)
 *   **Request Body:**
     *   `id` *(string, Required)*: Unique ID for the target.
     *   `title` *(string)*: Friendly title.
@@ -429,7 +429,7 @@ Injects mock beneficiary information or external target templates into the sandb
 Associates profile records (containing PII metadata to swap at the boundary) with a simulated decentralised identifier.
 
 *   **Endpoint:** `POST /api/seed/profile`
-*   **Source:** [src/app/api/seed/profile/route.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/seed/profile/route.ts)
+*   **Source:** [/Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/seed/profile/route.ts](file:///Users/edycu/Projects/Hackathon/dorahacks-t3launch-epoch/src/app/api/seed/profile/route.ts)
 *   **Request Body:**
     *   `did` *(string, Required)*: Decentralised Identifier (e.g. `did:t3n:heir-alice-123`).
     *   `profile` *(object, Required)*: Custom key-value dictionary representing the user's secure did:t3n profile.
