@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@terminal3/ecdsa_vc": "^0.1.34",
-    "@terminal3/t3n-sdk": "^3.7.0",
+    "@terminal3/t3n-sdk": "^3.9.0",
     "@terminal3/vc_core": "^0.0.37",
     "@terminal3/verify_vc": "^0.0.38",
     "canvas-confetti": "^1.9.3",
