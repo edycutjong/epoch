@@ -9,7 +9,7 @@
 | **See it all pass** (lint, types, 26 Rust + 193 TS tests, e2e) | `make ci` | ~1 min | None |
 | **Click through the UI** | `npm install && npm run dev` → http://localhost:3000 | ~2 min | None |
 | **Measure latency** | `npm run dev &` then `python3 scripts/bench.py` | ~1 min | None |
-| **Read the full walkthrough** | [DEMO.md](../DEMO.md) | — | — |
+| **Read the full walkthrough** | [DEMO.md](DEMO.md) | — | — |
 
 ## The 2-minute demo (UI)
 
@@ -24,4 +24,4 @@
 - **Simulated (local sandbox):** the Terminal 3 host APIs, OTP delivery (printed to console), and beneficiary egress. See the "Hackathon Simulation Context" banner in the app.
 
 ## Bug-bounty track
-See **[SDK_AUDIT.md](SDK_AUDIT.md)** — confirmed, code-cited security findings verified from the real published `@terminal3` VC packages — and **[BUGS.md](../BUGS.md)** for integration/doc gaps.
+See **[SDK_AUDIT.md](docs/SDK_AUDIT.md)** — confirmed, code-cited security findings verified from the real published `@terminal3` VC packages — and **[BUGS.md](BUGS.md)** for integration/doc gaps.

@@ -492,9 +492,12 @@ pub unsafe extern "C" fn fire_epoch(ptr: *const u8, len: usize) -> u64 {
     // call. The whole cascade is atomic: if the Courier reports ANY failed delivery,
     // we abort here WITHOUT marking the switch fired, issuing a VC, or enqueuing to
     // the durable outbox — so the vault keys stay sealed.
+    use sha2::Digest;
+    let computed_hash = format!("0x{:x}", sha2::Sha256::digest(vault_state.encrypted_keys.as_bytes()));
+
     let dispatch_payload = serde_json::json!({
         "beneficiaries": switch_state.beneficiaries,
-        "legacyHash": "0x3b18cf983bd7088998aa90c8b323c6f14028bc",
+        "legacyHash": computed_hash,
         "mockFailureStep": req.mock_failure_step
     }).to_string();
 

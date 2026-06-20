@@ -26,7 +26,7 @@
 
 ---
 
-> ⚡ **Reviewers / judges:** fastest path is **[GOLDEN_PATH.md](docs/GOLDEN_PATH.md)** — the entire flow in ~2 minutes, **no credentials**. Bug-bounty track: **[SDK_AUDIT.md](docs/SDK_AUDIT.md)** (confirmed, code-cited findings from the real `@terminal3` SDK). API reference: **[API.md](API.md)**.
+> ⚡ **Reviewers / judges:** fastest path is **[GOLDEN_PATH.md](GOLDEN_PATH.md)** — the entire flow in ~2 minutes, **no credentials**. Bug-bounty track: **[SDK_AUDIT.md](docs/SDK_AUDIT.md)** (confirmed, code-cited findings from the real `@terminal3` SDK). API reference: **[API.md](API.md)**.
 
 ## 📸 See it in Action
 
@@ -214,10 +214,12 @@ epoch/
 ├── src/
 │   ├── app/           # Next.js 16 App Router Pages
 │   ├── components/    # React 19 Components
-│   └── lib/           # Compiled enclave WASM (x2) & Client API Wrappers
+│   ├── lib/           # Compiled enclave WASM (x2) & Client API Wrappers
+│   └── theme/         # Tailwind CSS design system snippet
 ├── contract/          # Switch Coordinator — Rust/WASM TEE contract (#1)
 ├── contract-executor/ # Egress Dispatcher — Rust/WASM TEE contract (#2)
 ├── API.md             # Next.js Enclave API Routes documentation
+├── GOLDEN_PATH.md     # 2-Minute Reviewer Quickstart Guide
 ├── e2e/                # Playwright E2E Tests
 ├── test/               # Vitest Integration Tests
 ├── scripts/            # seed.py, bench.py, submission checks

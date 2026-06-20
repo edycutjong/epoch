@@ -14,6 +14,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       include: ['src/**/*.ts'],
+      exclude: ['src/theme/**', '**/theme/**', '**/*snippet*.ts'],
     },
     server: {
       deps: {
