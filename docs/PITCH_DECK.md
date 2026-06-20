@@ -8,7 +8,7 @@
 ## Slide 1: Title & Hook
 ### Epoch: If you go silent, your agent acts. Atomically. Blindly.
 * **Tagline:** A trustless dead-man's switch securing digital succession with hardware-isolated enclaves.
-* **Hero Image:** ![Epoch Hero](file:///public/docs/readme-hero.png)
+* **Hero Image:** ![Epoch Hero](readme-hero.svg)
 * **Live Demo:** [epoch.edycu.dev](https://epoch.edycu.dev)
 
 **Speaker Notes:**

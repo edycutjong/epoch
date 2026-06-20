@@ -16,7 +16,7 @@ def check_readiness():
         "scripts/bench.py",
         "scripts/verify_offline.py",
         "public/og-image.png",
-        "docs/readme-hero.png",
+        "docs/readme-hero.svg",
     ]
 
     missing = []

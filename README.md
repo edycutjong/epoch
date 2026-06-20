@@ -209,7 +209,7 @@ epoch/
 │   ├── assets/
 │   │   ├── screenshots/  # Walkthrough screenshots (01 to 08)
 │   │   └── icon-512.png
-│   ├── readme-hero.png
+│   ├── readme-hero.svg
 │   └── PITCH_DECK.md
 ├── src/
 │   ├── app/           # Next.js 16 App Router Pages
