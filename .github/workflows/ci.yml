@@ -32,7 +32,7 @@ jobs:
       - name: Unit tests with coverage
         run: npm run test:coverage || true # Allow failure during mock sandbox setup
       - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: frontend-coverage
           path: coverage/
@@ -142,7 +142,7 @@ jobs:
           NODE_ENV: production
       - name: Upload E2E artifacts on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: |
