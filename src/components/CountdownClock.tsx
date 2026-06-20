@@ -4,8 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { Shield, KeyRound, AlertTriangle, CheckCircle2, Clock } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-const ACTIVE_SECRET_KEY = process.env.NEXT_PUBLIC_T3N_API_KEY || 'DAVID_SECRET_KEY';
-
 interface CountdownClockProps {
   switchId: string;
   status: string;
@@ -179,8 +177,8 @@ export default function CountdownClock({
                     gracePeriod: scheduleDays * 24 * 60 * 60 * 1000,
                     beneficiaries: ['{{profile.verified_contacts.email.value}}'],
                     stashRefs: ['stash-ref-1'],
-                    encryptedKeys: '0x-ephemeral-ecdh-aes-gcm-key-agreement-vector',
-                    otpSecret: ACTIVE_SECRET_KEY
+                    encryptedKeys: '0x-ephemeral-ecdh-aes-gcm-key-agreement-vector'
+                    // otpSecret is derived server-side in /api/arm — never sent from the browser
                   })
                 });
                 const data = await res.json();
