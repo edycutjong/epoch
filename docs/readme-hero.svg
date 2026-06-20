@@ -250,21 +250,21 @@
   <path d="M 720 370 V 315 L 810 245" fill="none" stroke="rgba(255, 170, 0, 0.25)" stroke-width="1.5"/>
   <circle r="4" fill="#ffaa00">
     <animateMotion dur="3s" repeatCount="indefinite" path="M 720 370 V 315 L 810 245" />
-    <animate attributeName="opacity" dur="3s" values="1; 1; 0" keyTimes="0; 0.8; 1" repeatCount="indefinite" />
+    <animate attributeName="opacity" dur="3s" values="1;1;0;0" keyTimes="0;0.8;0.95;1" repeatCount="indefinite" />
   </circle>
 
   <!-- Circuit Line 2 (Middle Box to Center) -->
   <path d="M 910 370 V 290" fill="none" stroke="rgba(0, 240, 255, 0.25)" stroke-width="1.5"/>
   <circle r="4" fill="#00f0ff">
     <animateMotion dur="2.5s" repeatCount="indefinite" path="M 910 370 V 290" />
-    <animate attributeName="opacity" dur="2.5s" values="1; 1; 0" keyTimes="0; 0.8; 1" repeatCount="indefinite" />
+    <animate attributeName="opacity" dur="2.5s" values="1;1;0;0" keyTimes="0;0.8;0.95;1" repeatCount="indefinite" />
   </circle>
 
   <!-- Circuit Line 3 (Right Box to Center) -->
   <path d="M 1100 370 V 315 L 1010 245" fill="none" stroke="rgba(34, 197, 94, 0.25)" stroke-width="1.5"/>
   <circle r="4" fill="#22c55e">
     <animateMotion dur="3.2s" repeatCount="indefinite" path="M 1100 370 V 315 L 1010 245" />
-    <animate attributeName="opacity" dur="3.2s" values="1; 1; 0" keyTimes="0; 0.8; 1" repeatCount="indefinite" />
+    <animate attributeName="opacity" dur="3.2s" values="1;1;0;0" keyTimes="0;0.8;0.95;1" repeatCount="indefinite" />
   </circle>
 
   <!-- ==================== CENTRAL ENCLAVE VISUALIZER ==================== -->
