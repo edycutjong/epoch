@@ -10,6 +10,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  RUSTFLAGS: "-C link-arg=--allow-undefined"
+
 jobs:
   # ── STAGE 1: Code Quality (parallel with Stage 2) ─────────
   frontend-quality:
