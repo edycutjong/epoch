@@ -1,5 +1,5 @@
 import type { Config } from 'tailwindcss';
-import designSystemTheme from './docs/assets/_tailwind.config.snippet';
+import designSystemTheme from './docs/_tailwind.config.snippet';
 
 const config: Config = {
   content: [
