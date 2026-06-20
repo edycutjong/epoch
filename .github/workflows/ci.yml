@@ -90,10 +90,15 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           target: wasm32-unknown-unknown
-      - name: Compile Wasm Contract
-        run: cd contracts/epoch-contract && cargo build --target wasm32-unknown-unknown --release
-      - name: Copy Contract to Next.js
-        run: mkdir -p src/lib && cp contracts/epoch-contract/target/wasm32-unknown-unknown/release/epoch_contract.wasm src/lib/
+      - name: Compile WASM Contracts
+        run: |
+          cargo build --manifest-path contract/Cargo.toml --target wasm32-unknown-unknown --release
+          cargo build --manifest-path contract-executor/Cargo.toml --target wasm32-unknown-unknown --release
+      - name: Copy Contracts to Next.js
+        run: |
+          mkdir -p src/lib
+          cp contract/target/wasm32-unknown-unknown/release/epoch_contract.wasm src/lib/
+          cp contract-executor/target/wasm32-unknown-unknown/release/epoch_executor.wasm src/lib/
       - name: Next.js production build
         run: npm run build
       - name: Check bundle size
@@ -130,10 +135,15 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           target: wasm32-unknown-unknown
-      - name: Compile Wasm Contract
-        run: cd contracts/epoch-contract && cargo build --target wasm32-unknown-unknown --release
-      - name: Copy Contract to Next.js
-        run: mkdir -p src/lib && cp contracts/epoch-contract/target/wasm32-unknown-unknown/release/epoch_contract.wasm src/lib/
+      - name: Compile WASM Contracts
+        run: |
+          cargo build --manifest-path contract/Cargo.toml --target wasm32-unknown-unknown --release
+          cargo build --manifest-path contract-executor/Cargo.toml --target wasm32-unknown-unknown --release
+      - name: Copy Contracts to Next.js
+        run: |
+          mkdir -p src/lib
+          cp contract/target/wasm32-unknown-unknown/release/epoch_contract.wasm src/lib/
+          cp contract-executor/target/wasm32-unknown-unknown/release/epoch_executor.wasm src/lib/
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
       - name: Run E2E tests
@@ -169,10 +179,15 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           target: wasm32-unknown-unknown
-      - name: Compile Wasm Contract
-        run: cd contracts/epoch-contract && cargo build --target wasm32-unknown-unknown --release
-      - name: Copy Contract to Next.js
-        run: mkdir -p src/lib && cp contracts/epoch-contract/target/wasm32-unknown-unknown/release/epoch_contract.wasm src/lib/
+      - name: Compile WASM Contracts
+        run: |
+          cargo build --manifest-path contract/Cargo.toml --target wasm32-unknown-unknown --release
+          cargo build --manifest-path contract-executor/Cargo.toml --target wasm32-unknown-unknown --release
+      - name: Copy Contracts to Next.js
+        run: |
+          mkdir -p src/lib
+          cp contract/target/wasm32-unknown-unknown/release/epoch_contract.wasm src/lib/
+          cp contract-executor/target/wasm32-unknown-unknown/release/epoch_executor.wasm src/lib/
       - name: Build Next.js
         run: npm run build
       - name: Lighthouse CI

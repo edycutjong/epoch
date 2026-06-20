@@ -8,8 +8,12 @@ import * as realVcModule from '../src/lib/realVc';
 import { verifyVc } from '@terminal3/verify_vc';
 
 vi.mock('@terminal3/verify_vc', () => {
+  const mockVerify = vi.fn().mockResolvedValue({ isValid: true, message: 'Verification successful' });
   return {
-    verifyVc: vi.fn().mockResolvedValue({ isValid: true, message: 'Verification successful' })
+    verifyVc: mockVerify,
+    default: {
+      verifyVc: mockVerify
+    }
   };
 });
 
