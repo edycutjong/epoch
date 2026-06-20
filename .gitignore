@@ -34,9 +34,8 @@ coverage/
 # Lighthouse CI reports
 .lighthouseci/
 
-# Rust/Cargo build outputs
+# Rust/Cargo build outputs (Cargo.lock is committed for reproducible WASM builds)
 target/
-Cargo.lock
 
 # TS Build Cache
 *.tsbuildinfo
@@ -46,4 +45,3 @@ Cargo.lock
 Thumbs.db
 
 docs/assets
-docs/readme-hero.png
