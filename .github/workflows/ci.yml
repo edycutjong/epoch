@@ -209,3 +209,25 @@ jobs:
       - name: All gates passed
         run: |
           echo "🚀 All CI/CD gates passed!"
+
+  # ── STAGE 7: Deploy to Railway (main only) ────────────────
+  deploy-railway:
+    name: "Stage 7 · Deploy to Railway"
+    needs: [deploy-gate]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install Railway CLI
+        run: npm install --global @railway/cli
+
+      - name: Deploy to Railway
+        run: railway deploy --service epoch --token=${{ secrets.RAILWAY_TOKEN }}
