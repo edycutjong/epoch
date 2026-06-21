@@ -25,6 +25,7 @@ const nextConfig = {
     'ethers',
   ],
   allowedDevOrigins: ['127.0.2.2'],
+  devIndicators: false,
 };
 
 export default nextConfig;
