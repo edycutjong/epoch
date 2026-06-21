@@ -230,6 +230,8 @@ jobs:
         run: npm install --global @railway/cli
 
       - name: Deploy to Railway
-        run: railway up --service epoch --ci
+        run: |
+          CLEANED_TOKEN=$(echo -n "$RAILWAY_TOKEN" | tr -d '\r\n ')
+          RAILWAY_TOKEN="$CLEANED_TOKEN" railway up --service epoch --ci
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
