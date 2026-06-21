@@ -216,6 +216,8 @@ jobs:
     needs: [deploy-gate]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -235,3 +237,27 @@ jobs:
           RAILWAY_TOKEN="$CLEANED_TOKEN" railway up --service epoch --ci
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Get current version
+        run: echo "NEW_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+
+      - name: Build release packages
+        run: |
+          if [ -d "sdk" ]; then
+            cd sdk && npm pack && mv *.tgz ../ && cd ..
+          fi
+          if [ -d "cli" ]; then
+            cd cli && npm pack && mv *.tgz ../ && cd ..
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            *.tgz
+          tag_name: v${{ env.NEW_VERSION }}
+          name: Release v${{ env.NEW_VERSION }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,4 +1,4 @@
-.PHONY: help ci e2e lighthouse security-scan test-contract build-contracts bench
+.PHONY: help ci e2e lighthouse security-scan test-contract build-contracts bench version-patch version-minor version-major
 
 help:
 	@echo "Epoch Makefile Harness"
@@ -10,6 +10,9 @@ help:
 	@echo "make e2e            - Run Playwright E2E tests"
 	@echo "make lighthouse     - Run Lighthouse CI performance and accessibility audit"
 	@echo "make security-scan  - Run npm audit and license compliance check"
+	@echo "make version-patch  - Bump version by patch (x.y.Z+1)"
+	@echo "make version-minor  - Bump version by minor (x.Y+1.0)"
+	@echo "make version-major  - Bump version by major (X+1.0.0)"
 
 ci:
 	@echo "=== RUNNING RUST CONTRACT TESTS (Coordinator + Dispatcher) ==="
@@ -49,4 +52,20 @@ security-scan:
 	@echo ""
 	@echo "=== LICENSE CHECK ==="
 	npx license-checker --production --failOn "GPL-3.0;AGPL-3.0" --summary || true
+
+version-patch:
+	PATH="/opt/homebrew/bin:$$PATH" node scripts/bump-version.js patch
+	git add .
+	git commit -m "chore(release): bump version to $$(PATH="/opt/homebrew/bin:$$PATH" node -p "require('./package.json').version")"
+
+version-minor:
+	PATH="/opt/homebrew/bin:$$PATH" node scripts/bump-version.js minor
+	git add .
+	git commit -m "chore(release): bump version to $$(PATH="/opt/homebrew/bin:$$PATH" node -p "require('./package.json').version")"
+
+version-major:
+	PATH="/opt/homebrew/bin:$$PATH" node scripts/bump-version.js major
+	git add .
+	git commit -m "chore(release): bump version to $$(PATH="/opt/homebrew/bin:$$PATH" node -p "require('./package.json').version")"
+
 
