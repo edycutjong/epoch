@@ -243,10 +243,10 @@ jobs:
 
       - name: Build release packages
         run: |
-          if [ -d "sdk" ]; then
+          if [ -f "sdk/package.json" ]; then
             cd sdk && npm pack && mv *.tgz ../ && cd ..
           fi
-          if [ -d "cli" ]; then
+          if [ -f "cli/package.json" ]; then
             cd cli && npm pack && mv *.tgz ../ && cd ..
           fi
 
