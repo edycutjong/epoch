@@ -30,7 +30,7 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.61.0",
+    "@playwright/test": "^1.61.1",
     "@types/canvas-confetti": "^1.6.4",
     "@types/node": "^20.11.24",
     "@types/react": "^19.0.0",
